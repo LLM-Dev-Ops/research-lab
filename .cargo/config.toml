@@ -1,0 +1,10 @@
+[profile.dev]
+split-debuginfo = "unpacked"
+
+[profile.release]
+debug = false
+lto = true
+codegen-units = 1
+
+[net]
+git-fetch-with-cli = true

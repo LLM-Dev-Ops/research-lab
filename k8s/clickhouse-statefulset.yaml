@@ -1,0 +1,222 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/component: analytics
+    app.kubernetes.io/version: "24"
+spec:
+  serviceName: clickhouse-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: clickhouse
+      app.kubernetes.io/component: analytics
+
+  # Update Strategy
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+  # Pod Template
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: clickhouse
+        app.kubernetes.io/component: analytics
+        app.kubernetes.io/version: "24"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9363"
+    spec:
+      # Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101  # clickhouse user
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+
+      # Service Account
+      serviceAccountName: clickhouse
+
+      containers:
+        - name: clickhouse
+          image: clickhouse/clickhouse-server:24-alpine
+          imagePullPolicy: IfNotPresent
+
+          # Security Context for Container
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CHOWN
+                - DAC_OVERRIDE
+                - FOWNER
+                - SETGID
+                - SETUID
+                - SYS_NICE  # For performance tuning
+            readOnlyRootFilesystem: false  # ClickHouse needs to write
+
+          # Ports
+          ports:
+            - name: http
+              containerPort: 8123
+              protocol: TCP
+            - name: native
+              containerPort: 9000
+              protocol: TCP
+            - name: interserver
+              containerPort: 9009
+              protocol: TCP
+
+          # Environment Variables
+          envFrom:
+            - configMapRef:
+                name: clickhouse-config
+          env:
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: clickhouse-secrets
+                  key: CLICKHOUSE_PASSWORD
+
+          # Resource Limits
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 2Gi
+            limits:
+              cpu: 4000m
+              memory: 8Gi
+
+          # Volume Mounts
+          volumeMounts:
+            - name: clickhouse-data
+              mountPath: /var/lib/clickhouse
+            - name: clickhouse-logs
+              mountPath: /var/log/clickhouse-server
+            - name: clickhouse-tmp
+              mountPath: /tmp
+
+          # Liveness Probe
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+
+          # Readiness Probe
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+
+          # Startup Probe
+          startupProbe:
+            httpGet:
+              path: /ping
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 30
+
+      # Volumes
+      volumes:
+        - name: clickhouse-logs
+          emptyDir: {}
+        - name: clickhouse-tmp
+          emptyDir: {}
+
+      # Termination Grace Period
+      terminationGracePeriodSeconds: 120
+
+  # Volume Claim Templates
+  volumeClaimTemplates:
+    - metadata:
+        name: clickhouse-data
+        labels:
+          app.kubernetes.io/name: clickhouse
+          app.kubernetes.io/component: analytics
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi
+        # storageClassName: standard  # Adjust based on your cluster
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: clickhouse
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/component: analytics
+
+---
+# Optional: ClickHouse Keeper for replication (if using multiple replicas)
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   name: clickhouse-keeper
+#   namespace: llm-research-lab
+#   labels:
+#     app.kubernetes.io/name: clickhouse-keeper
+#     app.kubernetes.io/component: coordination
+# spec:
+#   serviceName: clickhouse-keeper-service
+#   replicas: 3
+#   selector:
+#     matchLabels:
+#       app.kubernetes.io/name: clickhouse-keeper
+#       app.kubernetes.io/component: coordination
+#   template:
+#     metadata:
+#       labels:
+#         app.kubernetes.io/name: clickhouse-keeper
+#         app.kubernetes.io/component: coordination
+#     spec:
+#       containers:
+#         - name: clickhouse-keeper
+#           image: clickhouse/clickhouse-keeper:24-alpine
+#           ports:
+#             - name: client
+#               containerPort: 9181
+#             - name: raft
+#               containerPort: 9234
+#           volumeMounts:
+#             - name: keeper-data
+#               mountPath: /var/lib/clickhouse-keeper
+#   volumeClaimTemplates:
+#     - metadata:
+#         name: keeper-data
+#       spec:
+#         accessModes:
+#           - ReadWriteOnce
+#         resources:
+#           requests:
+#             storage: 10Gi

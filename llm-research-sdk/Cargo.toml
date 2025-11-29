@@ -1,0 +1,64 @@
+[package]
+name = "llm-research-sdk"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Official Rust SDK for the LLM Research Lab API"
+documentation = "https://docs.llm-research-lab.io/sdk"
+readme = "README.md"
+keywords = ["llm", "ai", "research", "sdk", "api"]
+categories = ["api-bindings", "development-tools"]
+
+[dependencies]
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "gzip", "brotli", "stream"] }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+
+# Types
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# URL handling
+url = "2.5"
+
+# Retry and backoff
+backoff = { version = "0.4", features = ["tokio"] }
+
+# Validation
+validator = { workspace = true }
+
+# Tracing
+tracing = { workspace = true }
+
+# Base64 encoding
+base64 = "0.22"
+
+# Secure random
+rand = { workspace = true }
+
+# Shared types
+llm-research-core = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+wiremock = { workspace = true }
+mockall = { workspace = true }
+pretty_assertions = { workspace = true }
+tempfile = { workspace = true }
+
+[features]
+default = ["rustls"]
+rustls = ["reqwest/rustls-tls"]
+native-tls = ["reqwest/native-tls"]

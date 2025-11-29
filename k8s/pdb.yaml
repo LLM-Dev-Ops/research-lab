@@ -1,0 +1,47 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: llm-research-lab-pdb
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: llm-research-lab
+    app.kubernetes.io/component: availability
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llm-research-lab
+      app.kubernetes.io/component: application
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgres-pdb
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/component: database
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: clickhouse-pdb
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/component: analytics
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: clickhouse
+      app.kubernetes.io/component: analytics

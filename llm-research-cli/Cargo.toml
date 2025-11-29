@@ -1,0 +1,68 @@
+[package]
+name = "llm-research-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Command-line interface for LLM Research Lab"
+readme = "README.md"
+keywords = ["llm", "research", "cli", "ml", "experiments"]
+categories = ["command-line-utilities", "development-tools"]
+
+[[bin]]
+name = "llm-research"
+path = "src/main.rs"
+
+[dependencies]
+# SDK
+llm-research-sdk = { workspace = true }
+
+# CLI framework
+clap = { workspace = true }
+dialoguer = { workspace = true }
+indicatif = { workspace = true }
+console = { workspace = true }
+comfy-table = { workspace = true }
+colored = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Configuration
+directories = { workspace = true }
+config = { workspace = true }
+
+# Credentials
+keyring = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = "0.9"
+toml = "0.8"
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# IDs and time
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# URL handling
+url = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+assert_cmd = "2.0"
+predicates = "3.1"
+
+[features]
+default = []
+# Enable secure credential storage using system keychain
+keychain = []

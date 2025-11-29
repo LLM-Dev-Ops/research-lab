@@ -1,0 +1,44 @@
+[package]
+name = "llm-research-metrics"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Workspace crates
+llm-research-core.workspace = true
+
+# Async runtime
+tokio.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Numerics
+rust_decimal.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Async traits
+async-trait.workspace = true
+
+# Observability
+tracing.workspace = true
+
+# Statistics
+statrs = "0.18"
+rand.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tokio-test.workspace = true
+proptest.workspace = true
+rstest.workspace = true
+pretty_assertions.workspace = true
+test-case.workspace = true
+approx = "0.5"

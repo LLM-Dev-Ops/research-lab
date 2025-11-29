@@ -1,0 +1,8 @@
+# Default configuration for LLM Research Lab
+
+port = 3000
+log_level = "info"
+
+database_url = "postgres://postgres:postgres@localhost/llm_research"
+clickhouse_url = "http://localhost:8123"
+s3_bucket = "llm-research-artifacts"

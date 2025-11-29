@@ -1,0 +1,53 @@
+[package]
+name = "llm-research-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# IDs and time
+uuid.workspace = true
+chrono.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Async traits
+async-trait.workspace = true
+
+# Cryptography
+sha2.workspace = true
+hex.workspace = true
+
+# Numerics
+rust_decimal.workspace = true
+
+# Validation
+validator.workspace = true
+
+# Regex
+regex = "1.11"
+
+# Optional database support
+sqlx = { workspace = true, optional = true }
+
+[features]
+default = []
+database = ["sqlx"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tokio-test.workspace = true
+proptest.workspace = true
+rstest.workspace = true
+pretty_assertions.workspace = true
+fake.workspace = true
+test-case.workspace = true
+serde_json.workspace = true

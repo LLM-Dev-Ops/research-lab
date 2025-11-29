@@ -1,0 +1,188 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/version: "16"
+spec:
+  serviceName: postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/component: database
+
+  # Update Strategy
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+  # Pod Template
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/component: database
+        app.kubernetes.io/version: "16"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9187"
+    spec:
+      # Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999  # postgres user
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+
+      # Service Account
+      serviceAccountName: postgres
+
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+
+          # Security Context for Container
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CHOWN
+                - DAC_OVERRIDE
+                - FOWNER
+                - SETGID
+                - SETUID
+            readOnlyRootFilesystem: false  # PostgreSQL needs to write
+
+          # Ports
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+
+          # Environment Variables
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_PASSWORD
+
+          # Resource Limits
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+
+          # Volume Mounts
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-config
+              mountPath: /etc/postgresql/postgresql.conf
+              subPath: postgres.conf
+            - name: postgres-config
+              mountPath: /etc/postgresql/pg_hba.conf
+              subPath: pg_hba.conf
+            - name: postgres-run
+              mountPath: /var/run/postgresql
+            - name: postgres-tmp
+              mountPath: /tmp
+
+          # Liveness Probe
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U llmlab -d llm_research
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+
+          # Readiness Probe
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U llmlab -d llm_research
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+
+          # Startup Probe
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U llmlab -d llm_research
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 30
+
+      # Volumes
+      volumes:
+        - name: postgres-config
+          configMap:
+            name: postgres-config
+            items:
+              - key: postgres.conf
+                path: postgres.conf
+              - key: pg_hba.conf
+                path: pg_hba.conf
+        - name: postgres-run
+          emptyDir: {}
+        - name: postgres-tmp
+          emptyDir: {}
+
+      # Termination Grace Period
+      terminationGracePeriodSeconds: 60
+
+  # Volume Claim Templates
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+        labels:
+          app.kubernetes.io/name: postgres
+          app.kubernetes.io/component: database
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
+        # storageClassName: standard  # Adjust based on your cluster
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: postgres
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database

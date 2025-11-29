@@ -1,0 +1,108 @@
+[package]
+name = "llm-research-api"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Workspace crates
+llm-research-core.workspace = true
+llm-research-storage.workspace = true
+llm-research-metrics.workspace = true
+llm-research-workflow.workspace = true
+
+# Async runtime and HTTP
+tokio.workspace = true
+axum.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# IDs and time
+uuid.workspace = true
+chrono.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Async traits
+async-trait.workspace = true
+
+# Validation
+validator.workspace = true
+
+# Authentication
+jsonwebtoken.workspace = true
+
+# Observability
+tracing.workspace = true
+opentelemetry = { version = "0.27", features = ["trace", "metrics"] }
+opentelemetry-otlp = { version = "0.27", features = ["trace", "grpc-tonic"] }
+opentelemetry_sdk = { version = "0.27", features = ["trace", "rt-tokio"] }
+opentelemetry-semantic-conventions = "0.27"
+tracing-opentelemetry = "0.28"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+metrics.workspace = true
+metrics-exporter-prometheus.workspace = true
+
+# Database
+sqlx.workspace = true
+
+# S3 Storage
+aws-sdk-s3.workspace = true
+aws-config.workspace = true
+
+# Numerics
+rust_decimal.workspace = true
+
+# Concurrent data structures
+dashmap.workspace = true
+
+# Async utilities
+futures.workspace = true
+
+# ClickHouse
+clickhouse.workspace = true
+
+# Cryptography
+sha2.workspace = true
+hex.workspace = true
+rand.workspace = true
+
+# Encoding
+base64 = "0.22"
+
+# Regex for SQL sanitization
+regex = "1.11"
+
+# Compression
+flate2 = "1.0"
+
+# System information
+sysinfo = "0.32"
+
+# URL parsing for query parameters
+url = "2.5"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tokio-test.workspace = true
+rstest.workspace = true
+pretty_assertions.workspace = true
+fake.workspace = true
+wiremock.workspace = true
+tempfile.workspace = true
+tower = { workspace = true, features = ["util"] }
+axum-test = "16.4"
+http-body-util = "0.1"
+hyper = { version = "1.5", features = ["full"] }
+base64 = "0.22"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+reqwest = { version = "0.12", features = ["json"] }
+anyhow = "1.0"

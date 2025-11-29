@@ -1,0 +1,57 @@
+[package]
+name = "llm-research-storage"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Workspace crates
+llm-research-core = { workspace = true, features = ["database"] }
+
+# Async runtime
+tokio.workspace = true
+
+# Database and storage
+sqlx.workspace = true
+clickhouse.workspace = true
+aws-sdk-s3.workspace = true
+aws-config.workspace = true
+aws-smithy-types = "1.2"
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# IDs and time
+uuid.workspace = true
+chrono.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Async traits
+async-trait.workspace = true
+
+# Numerics
+rust_decimal.workspace = true
+
+# Observability
+tracing.workspace = true
+
+# Cryptography
+sha2.workspace = true
+hex.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tokio-test.workspace = true
+rstest.workspace = true
+pretty_assertions.workspace = true
+fake.workspace = true
+mockall.workspace = true
+serial_test.workspace = true
+tempfile.workspace = true
+once_cell.workspace = true

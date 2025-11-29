@@ -1,0 +1,1626 @@
+openapi: 3.0.3
+info:
+  title: LLM Research Lab API
+  description: |
+    Enterprise-grade API for managing LLM research experiments, model evaluations,
+    datasets, and prompt templates.
+
+    ## Authentication
+
+    This API supports two authentication methods:
+
+    1. **JWT Bearer Token**: For user-based authentication
+       - Obtain tokens via the `/auth/login` endpoint
+       - Include in requests: `Authorization: Bearer <token>`
+
+    2. **API Key**: For service-to-service authentication
+       - Include in requests: `X-API-Key: <api_key>`
+
+    ## Rate Limiting
+
+    API requests are rate-limited based on authentication tier:
+    - **Free Tier**: 100 requests/minute
+    - **Standard Tier**: 1,000 requests/minute
+    - **Premium Tier**: 10,000 requests/minute
+    - **Enterprise Tier**: Unlimited
+
+    Rate limit headers are included in all responses:
+    - `X-RateLimit-Limit`: Maximum requests per window
+    - `X-RateLimit-Remaining`: Remaining requests in current window
+    - `X-RateLimit-Reset`: Unix timestamp when the window resets
+
+    ## Pagination
+
+    List endpoints support pagination via query parameters:
+    - `page`: Page number (1-indexed, default: 1)
+    - `page_size`: Items per page (default: 20, max: 100)
+    - `cursor`: Cursor for cursor-based pagination
+
+    ## Error Handling
+
+    Errors are returned in a consistent format:
+    ```json
+    {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Invalid request parameters",
+        "details": [
+          {"field": "name", "message": "Name is required"}
+        ]
+      }
+    }
+    ```
+
+  version: 1.0.0
+  contact:
+    name: LLM Research Lab Team
+    email: support@llm-research-lab.io
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://api.llm-research-lab.io/v1
+    description: Production server
+  - url: https://staging-api.llm-research-lab.io/v1
+    description: Staging server
+  - url: http://localhost:8080/v1
+    description: Local development
+
+tags:
+  - name: experiments
+    description: Experiment management operations
+  - name: runs
+    description: Experiment run operations
+  - name: models
+    description: LLM model registry operations
+  - name: datasets
+    description: Dataset management operations
+  - name: prompts
+    description: Prompt template operations
+  - name: evaluations
+    description: Evaluation and metrics operations
+  - name: health
+    description: Health check endpoints
+
+paths:
+  # ==================== EXPERIMENTS ====================
+  /experiments:
+    post:
+      summary: Create a new experiment
+      description: Creates a new experiment with the specified configuration
+      operationId: createExperiment
+      tags: [experiments]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExperimentRequest'
+            example:
+              name: "GPT-4 vs Claude Comparison"
+              description: "Comparing response quality on summarization tasks"
+              hypothesis: "GPT-4 will produce more concise summaries"
+              owner_id: "550e8400-e29b-41d4-a716-446655440000"
+              tags: ["comparison", "summarization", "gpt-4", "claude"]
+              config:
+                model_ids: ["model-123", "model-456"]
+                dataset_id: "dataset-789"
+                parameters:
+                  temperature: 0.7
+                  max_tokens: 500
+      responses:
+        '201':
+          description: Experiment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    get:
+      summary: List all experiments
+      description: Returns a paginated list of experiments
+      operationId: listExperiments
+      tags: [experiments]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: status
+          in: query
+          description: Filter by experiment status
+          schema:
+            $ref: '#/components/schemas/ExperimentStatus'
+        - name: owner_id
+          in: query
+          description: Filter by owner ID
+          schema:
+            type: string
+            format: uuid
+        - name: tags
+          in: query
+          description: Filter by tags (comma-separated)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of experiments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExperimentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /experiments/{id}:
+    get:
+      summary: Get experiment by ID
+      operationId: getExperiment
+      tags: [experiments]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '200':
+          description: Experiment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update experiment
+      operationId: updateExperiment
+      tags: [experiments]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExperimentRequest'
+      responses:
+        '200':
+          description: Experiment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      summary: Delete experiment
+      operationId: deleteExperiment
+      tags: [experiments]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '204':
+          description: Experiment deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /experiments/{id}/start:
+    post:
+      summary: Start experiment execution
+      operationId: startExperiment
+      tags: [experiments]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '200':
+          description: Experiment started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentResponse'
+        '400':
+          description: Experiment cannot be started (invalid state)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== EXPERIMENT RUNS ====================
+  /experiments/{id}/runs:
+    post:
+      summary: Create a new run for an experiment
+      operationId: createRun
+      tags: [runs]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRunRequest'
+      responses:
+        '201':
+          description: Run created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      summary: List runs for an experiment
+      operationId: listRuns
+      tags: [runs]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: List of runs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRunResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /experiments/{id}/runs/{runId}/complete:
+    post:
+      summary: Mark a run as completed
+      operationId: completeRun
+      tags: [runs]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Run completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /experiments/{id}/runs/{runId}/fail:
+    post:
+      summary: Mark a run as failed
+      operationId: failRun
+      tags: [runs]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/RunId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailRunRequest'
+      responses:
+        '200':
+          description: Run marked as failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== MODELS ====================
+  /models:
+    post:
+      summary: Register a new model
+      operationId: createModel
+      tags: [models]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateModelRequest'
+            example:
+              name: "GPT-4 Turbo"
+              provider: "openai"
+              model_identifier: "gpt-4-turbo-preview"
+              version: "2024-01"
+              config:
+                api_key_env: "OPENAI_API_KEY"
+                base_url: "https://api.openai.com/v1"
+      responses:
+        '201':
+          description: Model registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    get:
+      summary: List all registered models
+      operationId: listModels
+      tags: [models]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: provider
+          in: query
+          description: Filter by provider
+          schema:
+            $ref: '#/components/schemas/ModelProvider'
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedModelResponse'
+
+  /models/{id}:
+    get:
+      summary: Get model by ID
+      operationId: getModel
+      tags: [models]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      responses:
+        '200':
+          description: Model details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update model
+      operationId: updateModel
+      tags: [models]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateModelRequest'
+      responses:
+        '200':
+          description: Model updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete model
+      operationId: deleteModel
+      tags: [models]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      responses:
+        '204':
+          description: Model deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /models/providers:
+    get:
+      summary: List supported model providers
+      operationId: listProviders
+      tags: [models]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      responses:
+        '200':
+          description: List of providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProviderResponse'
+
+  # ==================== DATASETS ====================
+  /datasets:
+    post:
+      summary: Create a new dataset
+      operationId: createDataset
+      tags: [datasets]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDatasetRequest'
+      responses:
+        '201':
+          description: Dataset created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    get:
+      summary: List all datasets
+      operationId: listDatasets
+      tags: [datasets]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: List of datasets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDatasetResponse'
+
+  /datasets/{id}:
+    get:
+      summary: Get dataset by ID
+      operationId: getDataset
+      tags: [datasets]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DatasetId'
+      responses:
+        '200':
+          description: Dataset details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update dataset
+      operationId: updateDataset
+      tags: [datasets]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DatasetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDatasetRequest'
+      responses:
+        '200':
+          description: Dataset updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete dataset
+      operationId: deleteDataset
+      tags: [datasets]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DatasetId'
+      responses:
+        '204':
+          description: Dataset deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /datasets/{id}/versions:
+    post:
+      summary: Create a new dataset version
+      operationId: createDatasetVersion
+      tags: [datasets]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DatasetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDatasetVersionRequest'
+      responses:
+        '201':
+          description: Version created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetVersionResponse'
+
+    get:
+      summary: List dataset versions
+      operationId: listDatasetVersions
+      tags: [datasets]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DatasetId'
+      responses:
+        '200':
+          description: List of versions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DatasetVersionResponse'
+
+  /datasets/{id}/upload:
+    post:
+      summary: Get presigned upload URL
+      operationId: getUploadUrl
+      tags: [datasets]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DatasetId'
+      responses:
+        '200':
+          description: Upload URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+
+  /datasets/{id}/download:
+    get:
+      summary: Get presigned download URL
+      operationId: getDownloadUrl
+      tags: [datasets]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DatasetId'
+      responses:
+        '200':
+          description: Download URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadUrlResponse'
+
+  # ==================== PROMPTS ====================
+  /prompts:
+    post:
+      summary: Create a new prompt template
+      operationId: createPrompt
+      tags: [prompts]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePromptTemplateRequest'
+            example:
+              name: "Summarization Prompt"
+              description: "Template for summarizing documents"
+              template: "Summarize the following text in {{num_sentences}} sentences:\n\n{{text}}"
+      responses:
+        '201':
+          description: Prompt template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptTemplateResponse'
+
+    get:
+      summary: List all prompt templates
+      operationId: listPrompts
+      tags: [prompts]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: List of prompt templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPromptTemplateResponse'
+
+  /prompts/{id}:
+    get:
+      summary: Get prompt template by ID
+      operationId: getPrompt
+      tags: [prompts]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PromptId'
+      responses:
+        '200':
+          description: Prompt template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptTemplateResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update prompt template
+      operationId: updatePrompt
+      tags: [prompts]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PromptId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePromptTemplateRequest'
+      responses:
+        '200':
+          description: Prompt template updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptTemplateResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete prompt template
+      operationId: deletePrompt
+      tags: [prompts]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PromptId'
+      responses:
+        '204':
+          description: Prompt template deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== EVALUATIONS ====================
+  /evaluations:
+    post:
+      summary: Create a new evaluation
+      operationId: createEvaluation
+      tags: [evaluations]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEvaluationRequest'
+      responses:
+        '201':
+          description: Evaluation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponse'
+
+    get:
+      summary: List evaluations
+      operationId: listEvaluations
+      tags: [evaluations]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: experiment_id
+          in: query
+          description: Filter by experiment ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of evaluations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEvaluationResponse'
+
+  /evaluations/{id}:
+    get:
+      summary: Get evaluation by ID
+      operationId: getEvaluation
+      tags: [evaluations]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EvaluationId'
+      responses:
+        '200':
+          description: Evaluation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /experiments/{id}/metrics:
+    get:
+      summary: Get aggregated metrics for an experiment
+      operationId: getExperimentMetrics
+      tags: [evaluations]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '200':
+          description: Aggregated metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== HEALTH ====================
+  /health:
+    get:
+      summary: Basic health check
+      operationId: healthCheck
+      tags: [health]
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+
+  /health/live:
+    get:
+      summary: Kubernetes liveness probe
+      operationId: livenessCheck
+      tags: [health]
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /health/ready:
+    get:
+      summary: Kubernetes readiness probe
+      operationId: readinessCheck
+      tags: [health]
+      responses:
+        '200':
+          description: Service is ready to accept traffic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /metrics:
+    get:
+      summary: Prometheus metrics endpoint
+      operationId: getMetrics
+      tags: [health]
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for service accounts
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Page number (1-indexed)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSizeParam:
+      name: page_size
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    ExperimentId:
+      name: id
+      in: path
+      required: true
+      description: Experiment ID
+      schema:
+        type: string
+        format: uuid
+    RunId:
+      name: runId
+      in: path
+      required: true
+      description: Run ID
+      schema:
+        type: string
+        format: uuid
+    ModelId:
+      name: id
+      in: path
+      required: true
+      description: Model ID
+      schema:
+        type: string
+        format: uuid
+    DatasetId:
+      name: id
+      in: path
+      required: true
+      description: Dataset ID
+      schema:
+        type: string
+        format: uuid
+    PromptId:
+      name: id
+      in: path
+      required: true
+      description: Prompt template ID
+      schema:
+        type: string
+        format: uuid
+    EvaluationId:
+      name: id
+      in: path
+      required: true
+      description: Evaluation ID
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+
+  schemas:
+    # ==================== COMMON ====================
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: "NOT_FOUND"
+            message:
+              type: string
+              example: "Resource not found"
+
+    ValidationError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, details]
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Invalid request parameters"
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_previous:
+          type: boolean
+
+    # ==================== EXPERIMENTS ====================
+    ExperimentStatus:
+      type: string
+      enum: [draft, ready, running, completed, failed, archived]
+
+    CreateExperimentRequest:
+      type: object
+      required: [name, owner_id, config]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        hypothesis:
+          type: string
+        owner_id:
+          type: string
+          format: uuid
+        collaborators:
+          type: array
+          items:
+            type: string
+            format: uuid
+        tags:
+          type: array
+          items:
+            type: string
+        config:
+          $ref: '#/components/schemas/ExperimentConfig'
+
+    UpdateExperimentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        hypothesis:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        config:
+          $ref: '#/components/schemas/ExperimentConfig'
+
+    ExperimentConfig:
+      type: object
+      properties:
+        model_ids:
+          type: array
+          items:
+            type: string
+        dataset_id:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+
+    ExperimentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        hypothesis:
+          type: string
+        owner_id:
+          type: string
+          format: uuid
+        collaborators:
+          type: array
+          items:
+            type: string
+            format: uuid
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: '#/components/schemas/ExperimentStatus'
+        config:
+          $ref: '#/components/schemas/ExperimentConfig'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        archived_at:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    PaginatedExperimentResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentResponse'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ==================== RUNS ====================
+    CreateRunRequest:
+      type: object
+      properties:
+        config_overrides:
+          type: object
+          additionalProperties: true
+
+    FailRunRequest:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          minLength: 1
+
+    RunResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        experiment_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        config:
+          type: object
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        error:
+          type: string
+
+    PaginatedRunResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RunResponse'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ==================== MODELS ====================
+    ModelProvider:
+      type: string
+      enum: [openai, anthropic, google, azure, huggingface, custom]
+
+    CreateModelRequest:
+      type: object
+      required: [name, provider, model_identifier]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        provider:
+          $ref: '#/components/schemas/ModelProvider'
+        model_identifier:
+          type: string
+          minLength: 1
+          maxLength: 255
+        version:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+
+    UpdateModelRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        version:
+          type: string
+        config:
+          type: object
+
+    ModelResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        provider:
+          $ref: '#/components/schemas/ModelProvider'
+        model_identifier:
+          type: string
+        version:
+          type: string
+        config:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PaginatedModelResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelResponse'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    ProviderResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        supported_models:
+          type: array
+          items:
+            type: string
+
+    # ==================== DATASETS ====================
+    CreateDatasetRequest:
+      type: object
+      required: [name, s3_path, schema]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        s3_path:
+          type: string
+        schema:
+          type: object
+
+    UpdateDatasetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        schema:
+          type: object
+
+    CreateDatasetVersionRequest:
+      type: object
+      required: [s3_path]
+      properties:
+        s3_path:
+          type: string
+        schema:
+          type: object
+
+    DatasetResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        s3_path:
+          type: string
+        sample_count:
+          type: integer
+          format: int64
+        schema:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        version:
+          type: integer
+
+    DatasetVersionResponse:
+      type: object
+      properties:
+        version:
+          type: integer
+        dataset_id:
+          type: string
+          format: uuid
+        s3_path:
+          type: string
+        sample_count:
+          type: integer
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedDatasetResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatasetResponse'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    UploadUrlResponse:
+      type: object
+      properties:
+        upload_url:
+          type: string
+          format: uri
+        s3_path:
+          type: string
+
+    DownloadUrlResponse:
+      type: object
+      properties:
+        download_url:
+          type: string
+          format: uri
+
+    # ==================== PROMPTS ====================
+    CreatePromptTemplateRequest:
+      type: object
+      required: [name, template]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        template:
+          type: string
+          minLength: 1
+
+    UpdatePromptTemplateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        template:
+          type: string
+          minLength: 1
+
+    PromptTemplateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        template:
+          type: string
+        variables:
+          type: array
+          items:
+            type: string
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PaginatedPromptTemplateResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PromptTemplateResponse'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ==================== EVALUATIONS ====================
+    CreateEvaluationRequest:
+      type: object
+      required: [experiment_id, sample_id, input, output, latency_ms, token_count]
+      properties:
+        experiment_id:
+          type: string
+          format: uuid
+        sample_id:
+          type: string
+          format: uuid
+        input:
+          type: string
+          minLength: 1
+        output:
+          type: string
+          minLength: 1
+        expected_output:
+          type: string
+        latency_ms:
+          type: integer
+          format: int64
+        token_count:
+          type: integer
+        cost:
+          type: string
+          format: decimal
+        metrics:
+          type: object
+
+    EvaluationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        experiment_id:
+          type: string
+          format: uuid
+        sample_id:
+          type: string
+          format: uuid
+        input:
+          type: string
+        output:
+          type: string
+        expected_output:
+          type: string
+        latency_ms:
+          type: integer
+          format: int64
+        token_count:
+          type: integer
+        cost:
+          type: string
+          format: decimal
+        metrics:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedEvaluationResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluationResponse'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    MetricsResponse:
+      type: object
+      properties:
+        experiment_id:
+          type: string
+          format: uuid
+        total_samples:
+          type: integer
+          format: int64
+        avg_latency_ms:
+          type: number
+          format: double
+        total_tokens:
+          type: integer
+          format: int64
+        total_cost:
+          type: string
+          format: decimal
+        accuracy:
+          type: string
+          format: decimal
+        custom_metrics:
+          type: object
+
+    # ==================== HEALTH ====================
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        components:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status:
+                type: string
+              latency_ms:
+                type: number
+              message:
+                type: string
+        timestamp:
+          type: string
+          format: date-time

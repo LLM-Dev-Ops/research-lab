@@ -1,0 +1,68 @@
+# Build artifacts
+target/
+*.so
+*.dylib
+*.dll
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation
+docs/
+*.md
+README*
+LICENSE*
+
+# Tests
+tests/
+test-data/
+benches/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Dependencies
+node_modules/
+package-lock.json
+package.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# Development files
+.env
+.env.local
+config/local.toml
+
+# Plans and documentation
+plans/
+*.md
+review-processes*.md
+testing-strategy*.md
+Section-*.md
+QUICKSTART.md
+RUST_PROJECT_SUMMARY.md
+
+# Claude and AI artifacts
+.claude-flow/
+.claude/
+
+# Mac
+.DS_Store
+
+# Cargo lock for libraries (keep for binaries)
+# Cargo.lock

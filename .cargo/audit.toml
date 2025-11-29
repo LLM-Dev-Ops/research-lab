@@ -1,0 +1,12 @@
+# Security audit configuration
+# These advisories are ignored with documented justification
+
+[advisories]
+# RSA timing sidechannel vulnerability (RUSTSEC-2023-0071)
+# This is a transitive dependency from sqlx-macros-core (for MySQL support)
+# Our project only uses PostgreSQL, so this vulnerability does not affect us
+ignore = ["RUSTSEC-2023-0071"]
+
+# Unmaintained crate warnings - these are informational
+# json5 - used by config crate for JSON5 config file support (optional feature)
+# paste - used deep in nalgebra/simba dependency chain for statrs

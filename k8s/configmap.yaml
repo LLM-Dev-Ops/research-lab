@@ -1,0 +1,111 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-research-lab-config
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: llm-research-lab
+    app.kubernetes.io/component: configuration
+data:
+  # Application Configuration
+  LLM_RESEARCH_PORT: "8080"
+  LLM_RESEARCH_LOG_LEVEL: "info"
+  RUST_LOG: "info,llm_research_lab=debug,tower_http=debug"
+
+  # Database URLs
+  LLM_RESEARCH_DATABASE_URL: "postgres://llmlab:${POSTGRES_PASSWORD}@postgres-service:5432/llm_research"
+  LLM_RESEARCH_CLICKHOUSE_URL: "http://clickhouse-service:8123"
+  LLM_RESEARCH_REDIS_URL: "redis://redis-service:6379"
+
+  # S3/MinIO Configuration
+  LLM_RESEARCH_S3_BUCKET: "llm-research-artifacts"
+  AWS_ENDPOINT_URL: "http://minio-service:9000"
+  AWS_REGION: "us-east-1"
+
+  # Feature Flags
+  ENABLE_METRICS: "true"
+  ENABLE_TRACING: "true"
+  ENABLE_PROFILING: "false"
+
+  # Performance Tuning
+  TOKIO_WORKER_THREADS: "4"
+  MAX_CONNECTIONS: "100"
+  POOL_MIN_SIZE: "10"
+  POOL_MAX_SIZE: "50"
+  POOL_TIMEOUT_SECONDS: "30"
+
+  # Request Configuration
+  REQUEST_TIMEOUT_SECONDS: "300"
+  MAX_REQUEST_SIZE_MB: "100"
+
+  # Rate Limiting
+  RATE_LIMIT_REQUESTS_PER_MINUTE: "100"
+  RATE_LIMIT_BURST: "20"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+data:
+  POSTGRES_DB: "llm_research"
+  POSTGRES_USER: "llmlab"
+  PGDATA: "/var/lib/postgresql/data/pgdata"
+
+  # PostgreSQL Configuration
+  postgres.conf: |
+    # Connection Settings
+    max_connections = 200
+    superuser_reserved_connections = 3
+
+    # Memory Settings
+    shared_buffers = 256MB
+    effective_cache_size = 1GB
+    maintenance_work_mem = 64MB
+    work_mem = 2MB
+
+    # WAL Settings
+    wal_buffers = 16MB
+    min_wal_size = 1GB
+    max_wal_size = 4GB
+    checkpoint_completion_target = 0.9
+
+    # Query Planning
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    default_statistics_target = 100
+
+    # Logging
+    log_destination = 'stderr'
+    logging_collector = on
+    log_directory = 'log'
+    log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+    log_line_prefix = '%m [%p] %q%u@%d '
+    log_timezone = 'UTC'
+
+  pg_hba.conf: |
+    # TYPE  DATABASE        USER            ADDRESS                 METHOD
+    local   all             all                                     trust
+    host    all             all             127.0.0.1/32            md5
+    host    all             all             ::1/128                 md5
+    host    all             all             0.0.0.0/0               md5
+    host    replication     all             0.0.0.0/0               md5
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-config
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/component: analytics
+data:
+  CLICKHOUSE_DB: "llm_research_analytics"
+  CLICKHOUSE_USER: "llmlab"
+  CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"

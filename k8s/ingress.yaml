@@ -1,0 +1,149 @@
+---
+# Ingress for Nginx Ingress Controller
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: llm-research-lab-ingress
+  namespace: llm-research-lab
+  labels:
+    app.kubernetes.io/name: llm-research-lab
+    app.kubernetes.io/component: ingress
+  annotations:
+    # Nginx Ingress Controller Annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # Connection Settings
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+
+    # Rate Limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "10"
+
+    # CORS (if needed)
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+
+    # Security Headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+
+    # Certificate Manager (if using cert-manager)
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    cert-manager.io/acme-challenge-type: http01
+spec:
+  ingressClassName: nginx
+
+  # TLS Configuration
+  tls:
+    - hosts:
+        - llm-research-lab.example.com
+        - api.llm-research-lab.example.com
+      secretName: llm-research-lab-tls
+
+  rules:
+    # Main application domain
+    - host: llm-research-lab.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: llm-research-lab-service
+                port:
+                  name: http
+
+    # API subdomain
+    - host: api.llm-research-lab.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: llm-research-lab-service
+                port:
+                  name: http
+
+---
+# Alternative Ingress for Traefik (uncomment if using Traefik)
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: llm-research-lab-ingress-traefik
+#   namespace: llm-research-lab
+#   labels:
+#     app.kubernetes.io/name: llm-research-lab
+#     app.kubernetes.io/component: ingress
+#   annotations:
+#     # Traefik Annotations
+#     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+#     traefik.ingress.kubernetes.io/router.tls: "true"
+#     traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+#
+#     # Middleware
+#     traefik.ingress.kubernetes.io/router.middlewares: llm-research-lab-ratelimit@kubernetescrd,llm-research-lab-headers@kubernetescrd
+#
+#     # Rate Limiting
+#     traefik.ingress.kubernetes.io/router.ratelimit.average: "100"
+#     traefik.ingress.kubernetes.io/router.ratelimit.burst: "50"
+# spec:
+#   ingressClassName: traefik
+#
+#   tls:
+#     - hosts:
+#         - llm-research-lab.example.com
+#         - api.llm-research-lab.example.com
+#       secretName: llm-research-lab-tls
+#
+#   rules:
+#     - host: llm-research-lab.example.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: llm-research-lab-service
+#                 port:
+#                   name: http
+#
+#     - host: api.llm-research-lab.example.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: llm-research-lab-service
+#                 port:
+#                   name: http
+
+---
+# Certificate for TLS (if using cert-manager)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: llm-research-lab-tls
+  namespace: llm-research-lab
+spec:
+  secretName: llm-research-lab-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - llm-research-lab.example.com
+    - api.llm-research-lab.example.com
+  usages:
+    - digital signature
+    - key encipherment
