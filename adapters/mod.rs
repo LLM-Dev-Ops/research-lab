@@ -20,11 +20,13 @@ pub mod metrics;
 pub mod evaluators;
 pub mod workflows;
 pub mod scoring;
+pub mod consumers;
 
 pub use metrics::*;
 pub use evaluators::*;
 pub use workflows::*;
 pub use scoring::*;
+pub use consumers::*;
 
 use serde_json::Value;
 use std::error::Error;

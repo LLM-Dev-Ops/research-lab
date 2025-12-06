@@ -19,6 +19,27 @@ license = "Proprietary"
 repository = "https://github.com/yourusername/llm-research-lab"
 
 [workspace.dependencies]
+# =============================================================================
+# LLM-Dev-Ops Ecosystem Dependencies (Phase 2A)
+# =============================================================================
+# LLM-Simulator - Simulation engine for LLM behavior modeling
+llm-simulator = { git = "https://github.com/LLM-Dev-Ops/simulator", branch = "main" }
+
+# LLM-Observatory - Observability and monitoring infrastructure
+llm-observatory-core = { git = "https://github.com/LLM-Dev-Ops/observatory", branch = "main" }
+
+# LLM-Benchmark-Exchange - Benchmark management and exchange
+llm-benchmark-domain = { git = "https://github.com/LLM-Dev-Ops/benchmark-exchange", branch = "main" }
+llm-benchmark-sdk = { git = "https://github.com/LLM-Dev-Ops/benchmark-exchange", branch = "main" }
+
+# LLM-Data-Vault - Secure data storage and management
+vault-core = { git = "https://github.com/LLM-Dev-Ops/data-vault", branch = "main" }
+vault-sdk = { git = "https://github.com/LLM-Dev-Ops/data-vault", branch = "main" }
+
+# NOTE: LLM-Test-Bench is intentionally NOT included.
+# Benchmark ingestion must remain file-based or SDK-based only.
+# =============================================================================
+
 # Async runtime and HTTP
 tokio = { version = "1.41", features = ["full"] }
 axum = { version = "0.7", features = ["macros"] }
