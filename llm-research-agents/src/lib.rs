@@ -96,6 +96,7 @@
 pub mod agents;
 pub mod clients;
 pub mod contracts;
+pub mod execution;
 pub mod handlers;
 pub mod telemetry;
 
@@ -112,6 +113,11 @@ pub use contracts::metrics::{MetricsInput, MetricsOutput, MetricType, ComputedMe
 pub use handlers::{HypothesisHandler, HypothesisEvaluateRequest, HypothesisEvaluateResponse};
 pub use handlers::{MetricHandler, MetricComputeRequest, MetricComputeResponse};
 pub use telemetry::TelemetryEmitter;
+pub use execution::{
+    ExecutionContext, ExecutionSpan, ExecutionResult, ExecutionArtifact,
+    ExecutionError, SpanType, SpanStatus,
+    validate_execution_context, REPO_NAME,
+};
 
 /// Type alias for MetricAgent (for backward compatibility with CLI)
 pub type MetricAgent = ExperimentalMetricAgent;

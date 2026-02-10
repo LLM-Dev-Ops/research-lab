@@ -9,6 +9,17 @@
 //! - **Edge Function Compatible**: Handlers are deterministic and stateless
 //! - **Telemetry Emission**: LLM-Observatory compatible telemetry
 //!
+//! # Agentics Execution System
+//!
+//! This service is instrumented as a Foundational Execution Unit within the
+//! Agentics execution system. Every agent endpoint:
+//!
+//! - Requires an `execution_context` with `execution_id` and `parent_span_id`
+//! - Rejects execution if `parent_span_id` is missing
+//! - Emits a repo-level span with nested agent-level spans
+//! - Attaches artifacts to agent spans (never directly to Core)
+//! - Returns an `ExecutionResult` envelope with the full span hierarchy
+//!
 //! # Service Topology
 //!
 //! Single unified service exposing:
@@ -34,6 +45,12 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 // Phase 7 Layer 2: Import RuVector client for startup validation
 use llm_research_agents::{RuVectorClient, RuVectorPersistence};
+
+// Agentics Execution System imports
+use llm_research_agents::{
+    ExecutionResult, ExecutionSpan,
+    validate_execution_context,
+};
 
 mod config;
 
@@ -269,15 +286,72 @@ async fn readiness_check(State(_state): State<CloudRunState>) -> (StatusCode, &'
 }
 
 // =============================================================================
-// Agent Endpoints
+// Agent Endpoints (Agentics Execution System)
+//
+// Every agent endpoint:
+// 1. Validates execution_context (rejects if parent_span_id missing)
+// 2. Creates a repo-level execution span
+// 3. Delegates to the handler (which creates agent-level span)
+// 4. Nests the agent span under the repo span
+// 5. Validates the agent-span invariant
+// 6. Returns ExecutionResult envelope with full span hierarchy
+//
+// This repo MUST NEVER return a flat response without spans.
+// This repo MUST NEVER return success if no agent spans were emitted.
 // =============================================================================
 
 /// POST /api/v1/agents/hypothesis - Evaluate a hypothesis.
+///
+/// Requires `execution_context` with valid `parent_span_id` from Core.
+/// Returns `ExecutionResult<HypothesisEvaluateResponse>` with repo and agent spans.
 async fn hypothesis_evaluate(
     State(state): State<CloudRunState>,
     Json(request): Json<HypothesisEvaluateRequest>,
-) -> (StatusCode, Json<HypothesisEvaluateResponse>) {
-    let response = state.hypothesis_handler.handle(request).await;
+) -> (StatusCode, Json<ExecutionResult<HypothesisEvaluateResponse>>) {
+    // ENFORCEMENT: Validate execution context - reject if missing
+    let exec_ctx = match validate_execution_context(&request.execution_context) {
+        Ok(ctx) => ctx.clone(),
+        Err(e) => {
+            error!(
+                error = %e,
+                "Execution REJECTED: missing or invalid execution context"
+            );
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ExecutionResult::rejected(e.to_string())),
+            );
+        }
+    };
+
+    // Create repo-level execution span (parent = Core span)
+    let mut repo_span = ExecutionSpan::new_repo(exec_ctx.parent_span_id);
+
+    // Execute handler (creates agent-level span internally)
+    let (response, agent_span) = state
+        .hypothesis_handler
+        .handle(request, repo_span.span_id)
+        .await;
+
+    // Nest agent span under repo span
+    repo_span.add_child(agent_span);
+
+    // Finalize repo span status based on agent outcome
+    if response.success {
+        repo_span.complete();
+    } else {
+        let reason = response
+            .error
+            .as_ref()
+            .map(|e| e.message.clone())
+            .unwrap_or_else(|| "Unknown failure".to_string());
+        repo_span.fail(reason);
+    }
+
+    // ENFORCEMENT: Validate agent-span invariant
+    if let Err(e) = repo_span.validate_agent_spans() {
+        error!(error = %e, "Execution INVALID: agent-span invariant violated");
+        repo_span.fail(e.to_string());
+    }
 
     let status = if response.success {
         StatusCode::OK
@@ -285,7 +359,14 @@ async fn hypothesis_evaluate(
         StatusCode::BAD_REQUEST
     };
 
-    (status, Json(response))
+    (
+        status,
+        Json(ExecutionResult {
+            execution_id: exec_ctx.execution_id,
+            repo_span,
+            result: Some(response),
+        }),
+    )
 }
 
 /// GET /api/v1/agents/hypothesis - Get hypothesis agent info.
@@ -300,11 +381,57 @@ async fn hypothesis_info() -> Json<AgentInfoResponse> {
 }
 
 /// POST /api/v1/agents/metric - Compute experimental metrics.
+///
+/// Requires `execution_context` with valid `parent_span_id` from Core.
+/// Returns `ExecutionResult<MetricComputeResponse>` with repo and agent spans.
 async fn metric_compute(
     State(state): State<CloudRunState>,
     Json(request): Json<MetricComputeRequest>,
-) -> (StatusCode, Json<MetricComputeResponse>) {
-    let response = state.metric_handler.handle(request).await;
+) -> (StatusCode, Json<ExecutionResult<MetricComputeResponse>>) {
+    // ENFORCEMENT: Validate execution context - reject if missing
+    let exec_ctx = match validate_execution_context(&request.execution_context) {
+        Ok(ctx) => ctx.clone(),
+        Err(e) => {
+            error!(
+                error = %e,
+                "Execution REJECTED: missing or invalid execution context"
+            );
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ExecutionResult::rejected(e.to_string())),
+            );
+        }
+    };
+
+    // Create repo-level execution span (parent = Core span)
+    let mut repo_span = ExecutionSpan::new_repo(exec_ctx.parent_span_id);
+
+    // Execute handler (creates agent-level span internally)
+    let (response, agent_span) = state
+        .metric_handler
+        .handle(request, repo_span.span_id)
+        .await;
+
+    // Nest agent span under repo span
+    repo_span.add_child(agent_span);
+
+    // Finalize repo span status based on agent outcome
+    if response.success {
+        repo_span.complete();
+    } else {
+        let reason = response
+            .error
+            .as_ref()
+            .map(|e| e.clone())
+            .unwrap_or_else(|| "Unknown failure".to_string());
+        repo_span.fail(reason);
+    }
+
+    // ENFORCEMENT: Validate agent-span invariant
+    if let Err(e) = repo_span.validate_agent_spans() {
+        error!(error = %e, "Execution INVALID: agent-span invariant violated");
+        repo_span.fail(e.to_string());
+    }
 
     let status = if response.success {
         StatusCode::OK
@@ -312,7 +439,14 @@ async fn metric_compute(
         StatusCode::BAD_REQUEST
     };
 
-    (status, Json(response))
+    (
+        status,
+        Json(ExecutionResult {
+            execution_id: exec_ctx.execution_id,
+            repo_span,
+            result: Some(response),
+        }),
+    )
 }
 
 /// GET /api/v1/agents/metric - Get metric agent info.

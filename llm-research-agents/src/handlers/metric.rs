@@ -50,6 +50,7 @@ use crate::agents::{Agent, ExperimentalMetricAgent, METRIC_AGENT_ID, METRIC_AGEN
 use crate::clients::{RuVectorClient, RuVectorPersistence};
 use crate::contracts::metrics::{MetricsInput, MetricsOutput};
 use crate::contracts::DecisionEvent;
+use crate::execution::{ExecutionArtifact, ExecutionContext, ExecutionSpan};
 use crate::telemetry::TelemetryEmitter;
 
 /// Trace context for distributed tracing.
@@ -69,6 +70,10 @@ pub struct MetricComputeRequest {
 
     /// Optional trace context for distributed tracing
     pub trace_context: Option<MetricTraceContext>,
+
+    /// Execution context from the Agentics Core orchestrator.
+    /// Required for all externally-invoked operations.
+    pub execution_context: Option<ExecutionContext>,
 }
 
 /// Response from metric computation.
@@ -141,21 +146,31 @@ impl MetricHandler {
     /// Handle a metric computation request.
     ///
     /// This is the primary entry point for the Edge Function.
+    /// Creates an agent-level execution span, attaches artifacts, and returns
+    /// both the response and the span for inclusion in the repo-level span.
+    ///
+    /// `repo_span_id` is the span_id of the enclosing repo-level span.
     #[instrument(skip(self, request), fields(
         request_id = %request.input.request_id,
         context_id = %request.input.context_id,
         metrics_count = request.input.metrics_requested.len()
     ))]
-    pub async fn handle(&self, request: MetricComputeRequest) -> MetricComputeResponse {
+    pub async fn handle(
+        &self,
+        request: MetricComputeRequest,
+        repo_span_id: Uuid,
+    ) -> (MetricComputeResponse, ExecutionSpan) {
         let start_time = Instant::now();
         let request_id = request.input.request_id;
+        let mut agent_span = ExecutionSpan::new_agent(repo_span_id, METRIC_AGENT_ID);
 
         info!("Handling metric computation request");
 
         // Validate request
         if let Err(e) = request.validate() {
             error!(error = %e, "Request validation failed");
-            return MetricComputeResponse {
+            agent_span.fail(format!("Validation error: {}", e));
+            let response = MetricComputeResponse {
                 success: false,
                 request_id,
                 output: None,
@@ -164,6 +179,7 @@ impl MetricHandler {
                 error_code: Some("METRIC_INPUT_INVALID".to_string()),
                 processing_time_ms: start_time.elapsed().as_millis() as u64,
             };
+            return (response, agent_span);
         }
 
         // Execute agent
@@ -171,7 +187,8 @@ impl MetricHandler {
             Ok(result) => result,
             Err(e) => {
                 error!(error = %e, "Metric computation failed");
-                return MetricComputeResponse {
+                agent_span.fail(format!("Computation error: {}", e));
+                let response = MetricComputeResponse {
                     success: false,
                     request_id,
                     output: None,
@@ -180,11 +197,44 @@ impl MetricHandler {
                     error_code: Some("METRIC_COMPUTATION_FAILED".to_string()),
                     processing_time_ms: start_time.elapsed().as_millis() as u64,
                 };
+                return (response, agent_span);
             }
         };
 
         // Persist decision event
         let storage_ref = self.persist_decision_event(&event).await;
+
+        // Attach decision event as artifact to agent span
+        agent_span.add_artifact(ExecutionArtifact {
+            id: format!("decision-event-{}", event.id),
+            uri: storage_ref.clone(),
+            hash: Some(event.inputs_hash.clone()),
+            filename: None,
+            artifact_type: "decision_event".to_string(),
+            data: serde_json::json!({
+                "event_id": event.id,
+                "decision_type": event.decision_type.to_string(),
+                "confidence": event.confidence.value.to_string(),
+                "agent_id": event.agent_id,
+                "agent_version": event.agent_version,
+            }),
+        });
+
+        // Attach computed metrics as artifact
+        agent_span.add_artifact(ExecutionArtifact {
+            id: format!("metrics-output-{}", request_id),
+            uri: None,
+            hash: None,
+            filename: None,
+            artifact_type: "computed_metrics".to_string(),
+            data: serde_json::json!({
+                "metrics_count": output.metrics.len(),
+                "metric_names": output.metrics.iter().map(|m| m.name.clone()).collect::<Vec<_>>(),
+                "request_id": request_id,
+            }),
+        });
+
+        agent_span.complete();
 
         // Build response
         let decision_summary = DecisionEventSummary {
@@ -204,7 +254,7 @@ impl MetricHandler {
             "Metric computation completed"
         );
 
-        MetricComputeResponse {
+        let response = MetricComputeResponse {
             success: true,
             request_id,
             output: Some(output),
@@ -212,7 +262,9 @@ impl MetricHandler {
             error: None,
             error_code: None,
             processing_time_ms,
-        }
+        };
+
+        (response, agent_span)
     }
 
     /// Persist decision event to ruvector-service.
@@ -305,6 +357,10 @@ mod tests {
                 },
             },
             trace_context: None,
+            execution_context: Some(ExecutionContext {
+                execution_id: Uuid::new_v4(),
+                parent_span_id: Uuid::new_v4(),
+            }),
         }
     }
 
@@ -312,8 +368,9 @@ mod tests {
     async fn test_metric_handler_success() {
         let handler = MetricHandler::new();
         let request = create_test_request();
+        let repo_span_id = Uuid::new_v4();
 
-        let response = handler.handle(request).await;
+        let (response, agent_span) = handler.handle(request, repo_span_id).await;
 
         assert!(response.success);
         assert!(response.output.is_some());
@@ -323,6 +380,13 @@ mod tests {
         let output = response.output.unwrap();
         assert_eq!(output.metrics.len(), 1);
         assert_eq!(output.metrics[0].name, "mean_accuracy");
+
+        // Verify agent span
+        assert_eq!(agent_span.parent_span_id, repo_span_id);
+        assert_eq!(agent_span.span_type, crate::execution::SpanType::Agent);
+        assert_eq!(agent_span.status, crate::execution::SpanStatus::Completed);
+        assert_eq!(agent_span.agent_name.as_deref(), Some(METRIC_AGENT_ID));
+        assert!(!agent_span.artifacts.is_empty());
     }
 
     #[tokio::test]
@@ -330,12 +394,17 @@ mod tests {
         let handler = MetricHandler::new();
         let mut request = create_test_request();
         request.input.data.records.clear();
+        let repo_span_id = Uuid::new_v4();
 
-        let response = handler.handle(request).await;
+        let (response, agent_span) = handler.handle(request, repo_span_id).await;
 
         assert!(!response.success);
         assert!(response.error.is_some());
         assert_eq!(response.error_code, Some("METRIC_COMPUTATION_FAILED".to_string()));
+
+        // Verify agent span records failure
+        assert_eq!(agent_span.status, crate::execution::SpanStatus::Failed);
+        assert!(agent_span.failure_reason.is_some());
     }
 
     #[test]

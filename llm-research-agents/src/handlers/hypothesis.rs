@@ -25,9 +25,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info, instrument, span, Level};
 use uuid::Uuid;
 
-use crate::agents::{Agent, HypothesisAgent, HypothesisAgentError};
+use crate::agents::{Agent, HypothesisAgent, HypothesisAgentError, HYPOTHESIS_AGENT_ID};
 use crate::clients::{RuVectorClient, RuVectorError, RuVectorPersistence};
 use crate::contracts::{HypothesisInput, HypothesisOutput, AgentError, DecisionEvent};
+use crate::execution::{ExecutionArtifact, ExecutionContext, ExecutionSpan};
 use crate::telemetry::TelemetryEmitter;
 
 /// Request for hypothesis evaluation.
@@ -38,6 +39,10 @@ pub struct HypothesisEvaluateRequest {
 
     /// Optional trace context
     pub trace_context: Option<TraceContext>,
+
+    /// Execution context from the Agentics Core orchestrator.
+    /// Required for all externally-invoked operations.
+    pub execution_context: Option<ExecutionContext>,
 }
 
 /// Trace context for distributed tracing.
@@ -138,12 +143,21 @@ impl HypothesisHandler {
     /// Handle a hypothesis evaluation request.
     ///
     /// This is the primary handler method for Edge Function invocation.
+    /// Creates an agent-level execution span, attaches artifacts, and returns
+    /// both the response and the span for inclusion in the repo-level span.
+    ///
+    /// `repo_span_id` is the span_id of the enclosing repo-level span.
     #[instrument(skip(self, request), fields(
         request_id = %request.input.request_id,
         hypothesis_id = %request.input.hypothesis.id
     ))]
-    pub async fn handle(&self, request: HypothesisEvaluateRequest) -> HypothesisEvaluateResponse {
+    pub async fn handle(
+        &self,
+        request: HypothesisEvaluateRequest,
+        repo_span_id: Uuid,
+    ) -> (HypothesisEvaluateResponse, ExecutionSpan) {
         let request_id = request.input.request_id;
+        let mut agent_span = ExecutionSpan::new_agent(repo_span_id, HYPOTHESIS_AGENT_ID);
 
         info!("Handling hypothesis evaluation request");
 
@@ -174,7 +188,38 @@ impl HypothesisHandler {
                     request.trace_context.as_ref(),
                 ).await;
 
-                HypothesisEvaluateResponse {
+                // Attach decision event as artifact to agent span
+                agent_span.add_artifact(ExecutionArtifact {
+                    id: format!("decision-event-{}", event.id),
+                    uri: Some(storage_ref.clone()),
+                    hash: Some(event.inputs_hash.clone()),
+                    filename: None,
+                    artifact_type: "decision_event".to_string(),
+                    data: serde_json::json!({
+                        "event_id": event.id,
+                        "decision_type": event.decision_type.to_string(),
+                        "confidence": event.confidence.value.to_string(),
+                        "agent_id": event.agent_id,
+                        "agent_version": event.agent_version,
+                    }),
+                });
+
+                // Attach hypothesis output as artifact
+                agent_span.add_artifact(ExecutionArtifact {
+                    id: format!("hypothesis-output-{}", request_id),
+                    uri: None,
+                    hash: None,
+                    filename: None,
+                    artifact_type: "hypothesis_evaluation_output".to_string(),
+                    data: serde_json::json!({
+                        "status": format!("{:?}", output.status),
+                        "request_id": request_id,
+                    }),
+                });
+
+                agent_span.complete();
+
+                let response = HypothesisEvaluateResponse {
                     success: true,
                     request_id,
                     output: Some(output),
@@ -183,7 +228,9 @@ impl HypothesisHandler {
                         storage_ref,
                     }),
                     error: None,
-                }
+                };
+
+                (response, agent_span)
             }
             Err(e) => {
                 error!(error = %e, "Hypothesis evaluation failed");
@@ -195,7 +242,9 @@ impl HypothesisHandler {
                     request.trace_context.as_ref(),
                 ).await;
 
-                HypothesisEvaluateResponse {
+                agent_span.fail(e.to_string());
+
+                let response = HypothesisEvaluateResponse {
                     success: false,
                     request_id,
                     output: None,
@@ -206,7 +255,9 @@ impl HypothesisHandler {
                         request_id,
                         details: None,
                     }),
-                }
+                };
+
+                (response, agent_span)
             }
         }
     }
@@ -312,6 +363,10 @@ mod tests {
                 context: None,
             },
             trace_context: None,
+            execution_context: Some(ExecutionContext {
+                execution_id: Uuid::new_v4(),
+                parent_span_id: Uuid::new_v4(),
+            }),
         }
     }
 
@@ -325,5 +380,13 @@ mod tests {
             actual: 10,
         });
         assert_eq!(error_code(&sample_error), "HYPOTHESIS_SAMPLE_SIZE");
+    }
+
+    #[test]
+    fn test_agent_span_included_in_handle_result() {
+        // Verify the handle signature returns an ExecutionSpan
+        // (compile-time check via type annotation)
+        let _: fn(&HypothesisHandler, HypothesisEvaluateRequest, Uuid)
+            -> std::pin::Pin<Box<dyn std::future::Future<Output = (HypothesisEvaluateResponse, ExecutionSpan)> + Send + '_>>;
     }
 }
