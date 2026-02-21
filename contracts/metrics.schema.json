@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://us-central1-agentics-dev.cloudfunctions.net/research-lab-agents/v1/research-lab/metrics",
+  "title": "Experimental Metric Agent Contract",
+  "description": "Request and response schemas for the Experimental Metric Agent. Agent ID: experimental-metric-agent, Classification: EXPERIMENTAL_METRICS, decision_type: experimental_metrics",
+  "definitions": {
+    "MetricComputeRequest": {
+      "type": "object",
+      "required": ["input"],
+      "properties": {
+        "input": { "$ref": "#/definitions/MetricsInput" },
+        "trace_context": { "$ref": "#/definitions/TraceContext" },
+        "execution_context": { "$ref": "#/definitions/ExecutionContext" }
+      }
+    },
+    "MetricsInput": {
+      "type": "object",
+      "required": ["request_id", "context_id", "metrics_requested", "data", "config"],
+      "properties": {
+        "request_id": { "type": "string", "format": "uuid" },
+        "context_id": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "metrics_requested": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/MetricRequest" }
+        },
+        "data": { "$ref": "#/definitions/MetricsData" },
+        "config": { "$ref": "#/definitions/MetricsConfig" }
+      }
+    },
+    "MetricRequest": {
+      "type": "object",
+      "required": ["name", "metric_type", "variable"],
+      "properties": {
+        "name": { "type": "string" },
+        "metric_type": {
+          "type": "string",
+          "enum": [
+            "central_tendency", "dispersion", "distribution_shape",
+            "percentile", "correlation", "regression", "custom_aggregation"
+          ]
+        },
+        "variable": { "type": "string" },
+        "group_by": { "type": ["string", "null"] },
+        "params": {}
+      }
+    },
+    "MetricsData": {
+      "type": "object",
+      "required": ["source", "records"],
+      "properties": {
+        "source": { "type": "string" },
+        "records": { "type": "array", "items": { "type": "object" } },
+        "schema": { "$ref": "#/definitions/DataSchema" }
+      }
+    },
+    "DataSchema": {
+      "type": "object",
+      "required": ["fields"],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/FieldDefinition" }
+        }
+      }
+    },
+    "FieldDefinition": {
+      "type": "object",
+      "required": ["name", "data_type", "nullable"],
+      "properties": {
+        "name": { "type": "string" },
+        "data_type": { "type": "string" },
+        "nullable": { "type": "boolean" }
+      }
+    },
+    "MetricsConfig": {
+      "type": "object",
+      "required": ["handle_missing", "precision", "include_ci"],
+      "properties": {
+        "handle_missing": {
+          "type": "string",
+          "enum": ["skip", "zero_fill", "mean_impute", "median_impute", "fail"]
+        },
+        "precision": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "include_ci": { "type": "boolean" },
+        "ci_level": { "type": ["string", "number", "null"] }
+      }
+    },
+    "TraceContext": {
+      "type": "object",
+      "required": ["trace_id", "span_id"],
+      "properties": {
+        "trace_id": { "type": "string" },
+        "span_id": { "type": "string" },
+        "parent_span_id": { "type": ["string", "null"] }
+      }
+    },
+    "ExecutionContext": {
+      "type": "object",
+      "required": ["execution_id", "parent_span_id"],
+      "properties": {
+        "execution_id": { "type": "string", "format": "uuid" },
+        "parent_span_id": { "type": "string", "format": "uuid" }
+      }
+    },
+    "MetricComputeResponse": {
+      "type": "object",
+      "required": ["success", "request_id", "processing_time_ms", "execution_metadata", "layers_executed"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "request_id": { "type": "string", "format": "uuid" },
+        "output": { "$ref": "#/definitions/MetricsOutput" },
+        "decision_event": { "$ref": "#/definitions/DecisionEventSummary" },
+        "error": { "type": ["string", "null"] },
+        "error_code": { "type": ["string", "null"] },
+        "processing_time_ms": { "type": "integer", "minimum": 0 },
+        "execution_metadata": { "$ref": "#/definitions/ExecutionMetadata" },
+        "layers_executed": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/LayerExecution" }
+        }
+      }
+    },
+    "MetricsOutput": {
+      "type": "object",
+      "required": ["metrics", "metadata", "warnings"],
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ComputedMetric" }
+        },
+        "metadata": { "$ref": "#/definitions/MetricsMetadata" },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "ComputedMetric": {
+      "type": "object",
+      "required": ["name", "metric_type", "value", "sample_size", "missing_count"],
+      "properties": {
+        "name": { "type": "string" },
+        "metric_type": {
+          "type": "string",
+          "enum": [
+            "central_tendency", "dispersion", "distribution_shape",
+            "percentile", "correlation", "regression", "custom_aggregation"
+          ]
+        },
+        "value": { "type": ["string", "number"] },
+        "confidence_interval": { "$ref": "#/definitions/MetricConfidenceInterval" },
+        "group": { "type": ["string", "null"] },
+        "sample_size": { "type": "integer", "minimum": 0 },
+        "missing_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "MetricConfidenceInterval": {
+      "type": "object",
+      "required": ["lower", "upper", "level"],
+      "properties": {
+        "lower": { "type": ["string", "number"] },
+        "upper": { "type": ["string", "number"] },
+        "level": { "type": ["string", "number"] }
+      }
+    },
+    "MetricsMetadata": {
+      "type": "object",
+      "required": ["computed_at", "records_processed", "processing_time_ms"],
+      "properties": {
+        "computed_at": { "type": "string", "format": "date-time" },
+        "records_processed": { "type": "integer", "minimum": 0 },
+        "processing_time_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "DecisionEventSummary": {
+      "type": "object",
+      "required": ["id", "agent_id", "agent_version", "decision_type", "confidence"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "agent_id": { "type": "string" },
+        "agent_version": { "type": "string" },
+        "decision_type": { "type": "string" },
+        "confidence": { "type": "string" },
+        "storage_ref": { "type": ["string", "null"] }
+      }
+    },
+    "ExecutionMetadata": {
+      "type": "object",
+      "required": ["trace_id", "timestamp", "service", "execution_id"],
+      "properties": {
+        "trace_id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "service": { "type": "string", "const": "research-lab-agents" },
+        "execution_id": { "type": "string", "format": "uuid" }
+      }
+    },
+    "LayerExecution": {
+      "type": "object",
+      "required": ["layer", "status"],
+      "properties": {
+        "layer": { "type": "string" },
+        "status": { "type": "string", "enum": ["completed", "failed"] },
+        "duration_ms": { "type": "number" }
+      }
+    }
+  },
+  "request": { "$ref": "#/definitions/MetricComputeRequest" },
+  "response": { "$ref": "#/definitions/MetricComputeResponse" }
+}

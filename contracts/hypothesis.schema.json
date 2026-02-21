@@ -1,0 +1,297 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://us-central1-agentics-dev.cloudfunctions.net/research-lab-agents/v1/research-lab/hypothesis",
+  "title": "Hypothesis Agent Contract",
+  "description": "Request and response schemas for the Hypothesis Evaluation Agent. Agent ID: hypothesis-agent-v1, Classification: HYPOTHESIS_EVALUATION, decision_type: hypothesis_evaluation",
+  "definitions": {
+    "HypothesisEvaluateRequest": {
+      "type": "object",
+      "required": ["input"],
+      "properties": {
+        "input": { "$ref": "#/definitions/HypothesisInput" },
+        "trace_context": { "$ref": "#/definitions/TraceContext" },
+        "execution_context": { "$ref": "#/definitions/ExecutionContext" }
+      }
+    },
+    "HypothesisInput": {
+      "type": "object",
+      "required": ["request_id", "hypothesis", "experimental_data", "config"],
+      "properties": {
+        "request_id": { "type": "string", "format": "uuid" },
+        "hypothesis": { "$ref": "#/definitions/HypothesisDefinition" },
+        "experimental_data": { "$ref": "#/definitions/ExperimentalData" },
+        "config": { "$ref": "#/definitions/EvaluationConfig" },
+        "context": { "$ref": "#/definitions/EvaluationContext" }
+      }
+    },
+    "HypothesisDefinition": {
+      "type": "object",
+      "required": [
+        "id", "name", "statement", "hypothesis_type",
+        "null_hypothesis", "alternative_hypothesis",
+        "variables", "significance_level"
+      ],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "statement": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "hypothesis_type": {
+          "type": "string",
+          "enum": ["comparative", "causal", "correlational", "existence", "threshold", "trend"]
+        },
+        "null_hypothesis": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "alternative_hypothesis": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "variables": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/HypothesisVariable" }
+        },
+        "expected_effect_size": { "type": ["string", "number", "null"] },
+        "significance_level": { "type": ["string", "number"] },
+        "required_power": { "type": ["string", "number", "null"] }
+      }
+    },
+    "HypothesisVariable": {
+      "type": "object",
+      "required": ["name", "role", "data_type"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "role": {
+          "type": "string",
+          "enum": ["independent", "dependent", "confounding", "control"]
+        },
+        "data_type": {
+          "type": "string",
+          "enum": ["continuous", "discrete", "categorical", "ordinal", "binary"]
+        },
+        "unit": { "type": ["string", "null"] }
+      }
+    },
+    "ExperimentalData": {
+      "type": "object",
+      "required": ["source_id", "collected_at", "observations", "sample_size", "quality_metrics"],
+      "properties": {
+        "source_id": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "collected_at": { "type": "string", "format": "date-time" },
+        "observations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/Observation" }
+        },
+        "sample_size": { "type": "integer", "minimum": 0 },
+        "quality_metrics": { "$ref": "#/definitions/DataQualityMetrics" }
+      }
+    },
+    "Observation": {
+      "type": "object",
+      "required": ["id", "values"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "values": {},
+        "group": { "type": ["string", "null"] },
+        "weight": { "type": ["string", "number", "null"] },
+        "timestamp": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "DataQualityMetrics": {
+      "type": "object",
+      "required": ["completeness", "validity", "outlier_count", "duplicate_count"],
+      "properties": {
+        "completeness": { "type": ["string", "number"] },
+        "validity": { "type": ["string", "number"] },
+        "outlier_count": { "type": "integer", "minimum": 0 },
+        "duplicate_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "EvaluationConfig": {
+      "type": "object",
+      "required": ["test_method", "apply_correction", "compute_effect_size", "generate_diagnostics"],
+      "properties": {
+        "test_method": {
+          "type": "string",
+          "enum": [
+            "t_test", "welch_t_test", "chi_squared", "mann_whitney_u",
+            "wilcoxon_signed_rank", "anova", "kruskal_wallis",
+            "bayesian_test", "bootstrap_ci"
+          ]
+        },
+        "apply_correction": { "type": "boolean" },
+        "correction_method": {
+          "type": ["string", "null"],
+          "enum": ["bonferroni", "holm", "benjamini_hochberg", "benjamini_yekutieli", null]
+        },
+        "bootstrap_iterations": { "type": ["integer", "null"], "minimum": 1 },
+        "random_seed": { "type": ["integer", "null"] },
+        "compute_effect_size": { "type": "boolean" },
+        "generate_diagnostics": { "type": "boolean" }
+      }
+    },
+    "EvaluationContext": {
+      "type": "object",
+      "properties": {
+        "experiment_id": { "type": ["string", "null"], "format": "uuid" },
+        "prior_evaluations": {
+          "type": "array",
+          "items": { "type": "string", "format": "uuid" }
+        },
+        "telemetry_ref": { "type": ["string", "null"] },
+        "cost_signals": {},
+        "performance_signals": {}
+      }
+    },
+    "TraceContext": {
+      "type": "object",
+      "required": ["trace_id", "span_id"],
+      "properties": {
+        "trace_id": { "type": "string" },
+        "span_id": { "type": "string" },
+        "parent_span_id": { "type": ["string", "null"] }
+      }
+    },
+    "ExecutionContext": {
+      "type": "object",
+      "required": ["execution_id", "parent_span_id"],
+      "properties": {
+        "execution_id": { "type": "string", "format": "uuid" },
+        "parent_span_id": { "type": "string", "format": "uuid" }
+      }
+    },
+    "HypothesisEvaluateResponse": {
+      "type": "object",
+      "required": ["success", "request_id", "execution_metadata", "layers_executed"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "request_id": { "type": "string", "format": "uuid" },
+        "output": { "$ref": "#/definitions/HypothesisOutput" },
+        "decision_event_ref": { "$ref": "#/definitions/DecisionEventRef" },
+        "error": { "$ref": "#/definitions/AgentError" },
+        "execution_metadata": { "$ref": "#/definitions/ExecutionMetadata" },
+        "layers_executed": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/LayerExecution" }
+        }
+      }
+    },
+    "HypothesisOutput": {
+      "type": "object",
+      "required": ["hypothesis_id", "status", "test_results", "diagnostics", "recommendations"],
+      "properties": {
+        "hypothesis_id": { "type": "string", "format": "uuid" },
+        "status": {
+          "type": "string",
+          "enum": ["defined", "evaluating", "accepted", "rejected", "inconclusive", "failed"]
+        },
+        "test_results": { "$ref": "#/definitions/TestResults" },
+        "effect_size": { "$ref": "#/definitions/EffectSize" },
+        "diagnostics": { "$ref": "#/definitions/DiagnosticInfo" },
+        "recommendations": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "TestResults": {
+      "type": "object",
+      "required": ["test_statistic", "p_value", "null_rejected", "decision"],
+      "properties": {
+        "test_statistic": { "type": ["string", "number"] },
+        "p_value": { "type": ["string", "number"] },
+        "corrected_p_value": { "type": ["string", "number", "null"] },
+        "degrees_of_freedom": { "type": ["string", "number", "null"] },
+        "confidence_interval": { "$ref": "#/definitions/ConfidenceInterval" },
+        "null_rejected": { "type": "boolean" },
+        "decision": { "type": "string" }
+      }
+    },
+    "ConfidenceInterval": {
+      "type": "object",
+      "required": ["lower", "upper", "level"],
+      "properties": {
+        "lower": { "type": ["string", "number"] },
+        "upper": { "type": ["string", "number"] },
+        "level": { "type": ["string", "number"] }
+      }
+    },
+    "EffectSize": {
+      "type": "object",
+      "required": ["measure", "value", "interpretation"],
+      "properties": {
+        "measure": {
+          "type": "string",
+          "enum": [
+            "cohens_d", "hedges_g", "glass_delta", "eta_squared",
+            "omega_squared", "cramers_v", "phi_coefficient",
+            "odds_ratio", "risk_ratio"
+          ]
+        },
+        "value": { "type": ["string", "number"] },
+        "interpretation": { "type": "string" }
+      }
+    },
+    "DiagnosticInfo": {
+      "type": "object",
+      "required": ["sample_adequacy", "assumption_violations", "warnings"],
+      "properties": {
+        "achieved_power": { "type": ["string", "number", "null"] },
+        "sample_adequacy": {
+          "type": "string",
+          "enum": ["adequate", "marginal", "inadequate", "unknown"]
+        },
+        "assumption_violations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/AssumptionViolation" }
+        },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "AssumptionViolation": {
+      "type": "object",
+      "required": ["assumption", "test_used", "severity", "recommendation"],
+      "properties": {
+        "assumption": { "type": "string" },
+        "test_used": { "type": "string" },
+        "severity": { "type": "string", "enum": ["minor", "moderate", "severe"] },
+        "recommendation": { "type": "string" }
+      }
+    },
+    "DecisionEventRef": {
+      "type": "object",
+      "required": ["event_id", "storage_ref"],
+      "properties": {
+        "event_id": { "type": "string", "format": "uuid" },
+        "storage_ref": { "type": "string" }
+      }
+    },
+    "AgentError": {
+      "type": "object",
+      "required": ["code", "message", "request_id"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "request_id": { "type": "string", "format": "uuid" },
+        "details": {}
+      }
+    },
+    "ExecutionMetadata": {
+      "type": "object",
+      "required": ["trace_id", "timestamp", "service", "execution_id"],
+      "properties": {
+        "trace_id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "service": { "type": "string", "const": "research-lab-agents" },
+        "execution_id": { "type": "string", "format": "uuid" }
+      }
+    },
+    "LayerExecution": {
+      "type": "object",
+      "required": ["layer", "status"],
+      "properties": {
+        "layer": { "type": "string" },
+        "status": { "type": "string", "enum": ["completed", "failed"] },
+        "duration_ms": { "type": "number" }
+      }
+    }
+  },
+  "request": { "$ref": "#/definitions/HypothesisEvaluateRequest" },
+  "response": { "$ref": "#/definitions/HypothesisEvaluateResponse" }
+}

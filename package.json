@@ -2,25 +2,19 @@
   "name": "llm-research-lab",
   "version": "0.1.0",
   "description": "LLM Research Lab - Experimental Evaluation Platform for Large Language Models",
+  "main": "index.js",
   "private": true,
-  "dependencies": {
-    "claude-flow": "^2.7.41",
-    "@llm-dev-ops/infra-config": "^0.1.0",
-    "@llm-dev-ops/infra-logging": "^0.1.0",
-    "@llm-dev-ops/infra-tracing": "^0.1.0",
-    "@llm-dev-ops/infra-metrics": "^0.1.0",
-    "@llm-dev-ops/infra-cache": "^0.1.0",
-    "@llm-dev-ops/infra-resilience": "^0.1.0",
-    "@llm-dev-ops/infra-error": "^0.1.0"
+  "engines": {
+    "node": ">=20.0.0"
   },
-  "devDependencies": {
-    "typescript": "^5.3.0",
-    "@types/node": "^20.0.0"
-  },
+  "dependencies": {},
   "scripts": {
-    "build": "cargo build --workspace",
+    "build": "echo 'Cloud Function: no build step required'",
+    "build:rust": "cargo build --workspace",
     "test": "cargo test --workspace",
+    "test:cf": "node -e \"const h = require('./index.js'); console.log('handler exported:', typeof h.handler === 'function')\"",
     "lint": "cargo clippy --workspace",
-    "fmt": "cargo fmt --all"
+    "fmt": "cargo fmt --all",
+    "deploy": "gcloud functions deploy research-lab-agents --runtime nodejs20 --trigger-http --region us-central1 --project agentics-dev --entry-point handler --memory 512MB --timeout 120s --no-allow-unauthenticated"
   }
 }

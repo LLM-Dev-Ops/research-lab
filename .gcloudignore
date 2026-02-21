@@ -11,7 +11,6 @@ tests/
 benchmarks/
 docs/
 plans/
-*.md
 
 # Ignore IDE files
 .vscode/
@@ -21,7 +20,7 @@ plans/
 target/
 *.log
 
-# Ignore kubernetes configs (not needed for Cloud Run source deploy)
+# Ignore kubernetes configs
 k8s/
 
 # Ignore local config
@@ -29,14 +28,27 @@ k8s/
 .env.*
 *.local
 
-# Include necessary files
-!Cargo.toml
-!Cargo.lock
-!Dockerfile
-!.dockerignore
-!config/
-!llm-research-lab/
-!llm-research-core/
-!llm-research-agents/
-!migrations/
-!adapters/
+# Ignore Rust source (not needed for Cloud Function)
+llm-research-lab/
+llm-research-core/
+llm-research-agents/
+llm-research-api/
+llm-research-cli/
+llm-research-metrics/
+llm-research-storage/
+llm-research-workflow/
+llm-research-sdk/
+adapters/
+migrations/
+Cargo.toml
+Cargo.lock
+Dockerfile
+.dockerignore
+docker-compose.yml
+Makefile
+deploy/
+
+# Include Cloud Function files (explicit)
+!index.js
+!package.json
+!contracts/
