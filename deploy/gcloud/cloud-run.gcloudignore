@@ -1,0 +1,21 @@
+# .gcloudignore for Cloud Run image builds — opposite of repo root's
+# .gcloudignore, which is Cloud-Function-specific.
+node_modules/
+.git/
+.github/
+.claude/
+.claude-flow/
+.swarm/
+.vscode/
+.idea/
+target/
+*.log
+k8s/
+tests/
+benchmarks/
+docs/
+plans/
+.env
+.env.*
+*.local
+.tools/

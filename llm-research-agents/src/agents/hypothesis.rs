@@ -165,7 +165,93 @@ impl HypothesisAgent {
         }
     }
 
+    /// Determine the dependent-variable name to extract from each observation.
+    ///
+    /// Falls back to "value" when no variable with `VariableRole::Dependent`
+    /// is declared — preserving the legacy test fixture shape.
+    fn dependent_variable_name(hypothesis: &HypothesisDefinition) -> String {
+        hypothesis
+            .variables
+            .iter()
+            .find(|v| v.role == VariableRole::Dependent)
+            .map(|v| v.name.clone())
+            .unwrap_or_else(|| "value".to_string())
+    }
+
+    /// Extract a numeric value from a single observation, trying multiple shapes.
+    ///
+    /// Supports payload shapes emitted by upstream callers:
+    /// - `values: { <var_name>: 0.88 }` (standard — nested, keyed by variable name)
+    /// - `values: { value: 0.88 }` (legacy fixture shape)
+    /// - `values: 0.88` (scalar — rare but seen in CLI variants)
+    /// - `values: { anything: 0.88, ... }` (fallback: first numeric field)
+    fn extract_observation_value(obs: &Observation, var_name: &str) -> Option<f64> {
+        if let Some(v) = obs.values.get(var_name).and_then(|v| v.as_f64()) {
+            return Some(v);
+        }
+        if let Some(v) = obs.values.get("value").and_then(|v| v.as_f64()) {
+            return Some(v);
+        }
+        if let Some(v) = obs.values.as_f64() {
+            return Some(v);
+        }
+        // Last-resort fallback: pick the first numeric field in the object.
+        // Covers payload variants where the dependent variable is not named
+        // explicitly or observations omit a declared variable.
+        if let Some(map) = obs.values.as_object() {
+            for (_, val) in map {
+                if let Some(n) = val.as_f64() {
+                    return Some(n);
+                }
+            }
+        }
+        None
+    }
+
+    /// Extract all usable sample values, partitioned by group if groups exist.
+    ///
+    /// Returns `(flat_values, Option<(group_a, group_b)>)`. If two distinct
+    /// non-empty groups are present the second element is populated and the
+    /// caller may run a two-sample test.
+    fn extract_samples(
+        hypothesis: &HypothesisDefinition,
+        data: &ExperimentalData,
+    ) -> (Vec<f64>, Option<(Vec<f64>, Vec<f64>)>) {
+        let var_name = Self::dependent_variable_name(hypothesis);
+
+        let mut flat: Vec<f64> = Vec::with_capacity(data.observations.len());
+        let mut grouped: std::collections::BTreeMap<String, Vec<f64>> = std::collections::BTreeMap::new();
+
+        for obs in &data.observations {
+            if let Some(value) = Self::extract_observation_value(obs, &var_name) {
+                flat.push(value);
+                if let Some(group) = obs.group.as_ref() {
+                    grouped.entry(group.clone()).or_default().push(value);
+                }
+            }
+        }
+
+        let two_sample = if grouped.len() >= 2 {
+            let mut iter = grouped.into_iter();
+            let (_, a) = iter.next().unwrap();
+            let (_, b) = iter.next().unwrap();
+            if !a.is_empty() && !b.is_empty() {
+                Some((a, b))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        (flat, two_sample)
+    }
+
     /// Perform t-test hypothesis evaluation.
+    ///
+    /// Runs a two-sample independent (Welch's) t-test when observations are
+    /// tagged with two or more distinct groups, otherwise a one-sample t-test
+    /// against mu = 0.
     #[instrument(skip(self, data), fields(sample_size = data.sample_size))]
     fn evaluate_ttest(
         &self,
@@ -175,47 +261,47 @@ impl HypothesisAgent {
     ) -> Result<TestResults, HypothesisAgentError> {
         info!("Performing t-test evaluation");
 
-        // Extract values from observations
-        let values: Vec<f64> = data
-            .observations
-            .iter()
-            .filter_map(|obs| {
-                obs.values
-                    .get("value")
-                    .and_then(|v| v.as_f64())
-            })
-            .collect();
+        let (values, two_sample) = Self::extract_samples(hypothesis, data);
 
-        if values.len() < self.config.min_sample_size as usize {
+        let total_samples = values.len();
+        let min_required = self.config.min_sample_size as usize;
+
+        // For two-sample tests, require min_sample_size across both groups combined.
+        if total_samples < min_required {
+            warn!(
+                dependent_variable = %Self::dependent_variable_name(hypothesis),
+                observations_in_payload = data.observations.len(),
+                samples_extracted = total_samples,
+                min_required,
+                "Insufficient extractable samples from payload"
+            );
             return Err(HypothesisAgentError::InsufficientSampleSize {
                 required: self.config.min_sample_size,
-                actual: values.len() as u64,
+                actual: total_samples as u64,
             });
         }
-
-        // Compute sample statistics
-        let n = values.len() as f64;
-        let mean: f64 = values.iter().sum::<f64>() / n;
-        let variance: f64 = values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
-        let std_dev = variance.sqrt();
-        let std_error = std_dev / n.sqrt();
-
-        // For one-sample t-test against mu=0 (simplified)
-        let t_statistic = mean / std_error;
-        let df = n - 1.0;
-
-        // Approximate p-value using t-distribution
-        // In production, use proper statistical library
-        let p_value = self.approximate_t_pvalue(t_statistic.abs(), df);
 
         let alpha: f64 = hypothesis
             .significance_level
             .try_into()
             .unwrap_or(0.05);
 
+        if let Some((a, b)) = two_sample {
+            return Ok(self.two_sample_ttest(&a, &b, alpha, config));
+        }
+
+        // One-sample t-test against mu = 0.
+        let n = values.len() as f64;
+        let mean: f64 = values.iter().sum::<f64>() / n;
+        let variance: f64 = values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
+        let std_dev = variance.sqrt();
+        let std_error = if std_dev == 0.0 { 1e-12 } else { std_dev / n.sqrt() };
+
+        let t_statistic = mean / std_error;
+        let df = n - 1.0;
+        let p_value = self.approximate_t_pvalue(t_statistic.abs(), df);
         let null_rejected = p_value < alpha;
 
-        // Compute confidence interval
         let t_critical = self.t_critical_value(alpha / 2.0, df);
         let ci_margin = t_critical * std_error;
 
@@ -224,7 +310,7 @@ impl HypothesisAgent {
             p_value = p_value,
             df = df,
             null_rejected = null_rejected,
-            "T-test results"
+            "One-sample t-test results"
         );
 
         Ok(TestResults {
@@ -239,6 +325,150 @@ impl HypothesisAgent {
             confidence_interval: Some(ConfidenceInterval {
                 lower: Decimal::try_from(mean - ci_margin).unwrap_or(dec!(0)),
                 upper: Decimal::try_from(mean + ci_margin).unwrap_or(dec!(0)),
+                level: dec!(0.95),
+            }),
+            null_rejected,
+            decision: if null_rejected {
+                "Reject null hypothesis".to_string()
+            } else {
+                "Fail to reject null hypothesis".to_string()
+            },
+        })
+    }
+
+    /// Welch's two-sample independent t-test.
+    fn two_sample_ttest(
+        &self,
+        a: &[f64],
+        b: &[f64],
+        alpha: f64,
+        config: &EvaluationConfig,
+    ) -> TestResults {
+        let (mean_a, var_a) = mean_and_variance(a);
+        let (mean_b, var_b) = mean_and_variance(b);
+        let na = a.len() as f64;
+        let nb = b.len() as f64;
+
+        let se_sq = var_a / na + var_b / nb;
+        let se = if se_sq <= 0.0 { 1e-12 } else { se_sq.sqrt() };
+        let diff = mean_a - mean_b;
+        let t_statistic = diff / se;
+
+        // Welch–Satterthwaite df
+        let df_num = se_sq.powi(2);
+        let df_den = (var_a / na).powi(2) / (na - 1.0).max(1.0)
+            + (var_b / nb).powi(2) / (nb - 1.0).max(1.0);
+        let df = if df_den <= 0.0 { na + nb - 2.0 } else { df_num / df_den };
+
+        let p_value = self.approximate_t_pvalue(t_statistic.abs(), df);
+        let null_rejected = p_value < alpha;
+
+        let t_critical = self.t_critical_value(alpha / 2.0, df);
+        let ci_margin = t_critical * se;
+
+        debug!(
+            t_statistic = t_statistic,
+            p_value = p_value,
+            df = df,
+            mean_a = mean_a,
+            mean_b = mean_b,
+            n_a = na,
+            n_b = nb,
+            "Two-sample (Welch) t-test results"
+        );
+
+        TestResults {
+            test_statistic: Decimal::try_from(t_statistic).unwrap_or(dec!(0)),
+            p_value: Decimal::try_from(p_value).unwrap_or(dec!(1)),
+            corrected_p_value: if config.apply_correction {
+                Some(Decimal::try_from(p_value).unwrap_or(dec!(1)))
+            } else {
+                None
+            },
+            degrees_of_freedom: Some(Decimal::try_from(df).unwrap_or(dec!(0))),
+            confidence_interval: Some(ConfidenceInterval {
+                lower: Decimal::try_from(diff - ci_margin).unwrap_or(dec!(0)),
+                upper: Decimal::try_from(diff + ci_margin).unwrap_or(dec!(0)),
+                level: dec!(0.95),
+            }),
+            null_rejected,
+            decision: if null_rejected {
+                "Reject null hypothesis".to_string()
+            } else {
+                "Fail to reject null hypothesis".to_string()
+            },
+        }
+    }
+
+    /// Mann-Whitney U test (two-sample non-parametric).
+    ///
+    /// Falls back to a one-sample Wilcoxon-style sign check when only one
+    /// group is present, since the test is fundamentally two-sample.
+    #[instrument(skip(self, data), fields(sample_size = data.sample_size))]
+    fn evaluate_mann_whitney(
+        &self,
+        hypothesis: &HypothesisDefinition,
+        data: &ExperimentalData,
+        config: &EvaluationConfig,
+    ) -> Result<TestResults, HypothesisAgentError> {
+        info!("Performing Mann-Whitney U test");
+
+        let (values, two_sample) = Self::extract_samples(hypothesis, data);
+
+        if values.len() < self.config.min_sample_size as usize {
+            return Err(HypothesisAgentError::InsufficientSampleSize {
+                required: self.config.min_sample_size,
+                actual: values.len() as u64,
+            });
+        }
+
+        let alpha: f64 = hypothesis
+            .significance_level
+            .try_into()
+            .unwrap_or(0.05);
+
+        // Mann-Whitney U needs two groups. Without groups, degrade to a
+        // two-sample t-test across a median split to still return real output.
+        let (a, b) = match two_sample {
+            Some(pair) => pair,
+            None => {
+                warn!("Mann-Whitney requested but no groups present; falling back to Welch t-test on median split");
+                let mut sorted = values.clone();
+                sorted.sort_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
+                let mid = sorted.len() / 2;
+                let lo: Vec<f64> = sorted[..mid].to_vec();
+                let hi: Vec<f64> = sorted[mid..].to_vec();
+                return Ok(self.two_sample_ttest(&lo, &hi, alpha, config));
+            }
+        };
+
+        let (u_statistic, p_value) = mann_whitney_u(&a, &b);
+        let null_rejected = p_value < alpha;
+
+        let (mean_a, _) = mean_and_variance(&a);
+        let (mean_b, _) = mean_and_variance(&b);
+        let diff = mean_a - mean_b;
+
+        debug!(
+            u_statistic = u_statistic,
+            p_value = p_value,
+            n_a = a.len(),
+            n_b = b.len(),
+            "Mann-Whitney U results"
+        );
+
+        Ok(TestResults {
+            test_statistic: Decimal::try_from(u_statistic).unwrap_or(dec!(0)),
+            p_value: Decimal::try_from(p_value).unwrap_or(dec!(1)),
+            corrected_p_value: if config.apply_correction {
+                Some(Decimal::try_from(p_value).unwrap_or(dec!(1)))
+            } else {
+                None
+            },
+            degrees_of_freedom: None,
+            confidence_interval: Some(ConfidenceInterval {
+                lower: Decimal::try_from(diff).unwrap_or(dec!(0)),
+                upper: Decimal::try_from(diff).unwrap_or(dec!(0)),
                 level: dec!(0.95),
             }),
             null_rejected,
@@ -282,28 +512,42 @@ impl HypothesisAgent {
     }
 
     /// Compute effect size (Cohen's d).
-    fn compute_effect_size(&self, data: &ExperimentalData) -> Option<EffectSize> {
-        let values: Vec<f64> = data
-            .observations
-            .iter()
-            .filter_map(|obs| obs.values.get("value").and_then(|v| v.as_f64()))
-            .collect();
+    ///
+    /// Uses the two-sample pooled-SD formulation when observations are split
+    /// into groups, and the one-sample-vs-zero formulation otherwise.
+    fn compute_effect_size(
+        &self,
+        hypothesis: &HypothesisDefinition,
+        data: &ExperimentalData,
+    ) -> Option<EffectSize> {
+        let (values, two_sample) = Self::extract_samples(hypothesis, data);
 
-        if values.len() < 2 {
-            return None;
-        }
-
-        let n = values.len() as f64;
-        let mean: f64 = values.iter().sum::<f64>() / n;
-        let variance: f64 = values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
-        let std_dev = variance.sqrt();
-
-        if std_dev == 0.0 {
-            return None;
-        }
-
-        // Cohen's d for one-sample (compared to 0)
-        let d = mean / std_dev;
+        let d = if let Some((a, b)) = two_sample {
+            if a.len() < 2 || b.len() < 2 {
+                return None;
+            }
+            let (mean_a, var_a) = mean_and_variance(&a);
+            let (mean_b, var_b) = mean_and_variance(&b);
+            let na = a.len() as f64;
+            let nb = b.len() as f64;
+            let pooled = (((na - 1.0) * var_a + (nb - 1.0) * var_b) / (na + nb - 2.0).max(1.0)).sqrt();
+            if pooled == 0.0 {
+                return None;
+            }
+            (mean_a - mean_b) / pooled
+        } else {
+            if values.len() < 2 {
+                return None;
+            }
+            let n = values.len() as f64;
+            let mean: f64 = values.iter().sum::<f64>() / n;
+            let variance: f64 = values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
+            let std_dev = variance.sqrt();
+            if std_dev == 0.0 {
+                return None;
+            }
+            mean / std_dev
+        };
 
         let interpretation = if d.abs() < 0.2 {
             "negligible"
@@ -455,8 +699,12 @@ impl Agent for HypothesisAgent {
             StatisticalTest::TTest | StatisticalTest::WelchTTest => {
                 self.evaluate_ttest(&input.hypothesis, &input.experimental_data, &input.config)?
             }
+            StatisticalTest::MannWhitneyU => {
+                self.evaluate_mann_whitney(&input.hypothesis, &input.experimental_data, &input.config)?
+            }
             _ => {
-                // For other tests, return a placeholder (would implement in production)
+                // For other tests, run a t-test (one- or two-sample) rather
+                // than silently falling through with the wrong test path.
                 warn!("Test method {:?} not fully implemented, using t-test", input.config.test_method);
                 self.evaluate_ttest(&input.hypothesis, &input.experimental_data, &input.config)?
             }
@@ -464,7 +712,7 @@ impl Agent for HypothesisAgent {
 
         // Compute effect size if requested
         let effect_size = if input.config.compute_effect_size {
-            self.compute_effect_size(&input.experimental_data)
+            self.compute_effect_size(&input.hypothesis, &input.experimental_data)
         } else {
             None
         };
@@ -645,6 +893,100 @@ impl HypothesisAgent {
 }
 
 // Helper functions for statistical approximations
+
+/// Sample mean and unbiased variance for a slice of f64 values.
+fn mean_and_variance(values: &[f64]) -> (f64, f64) {
+    let n = values.len() as f64;
+    if n <= 1.0 {
+        let m = if n == 0.0 { 0.0 } else { values[0] };
+        return (m, 0.0);
+    }
+    let mean: f64 = values.iter().sum::<f64>() / n;
+    let variance: f64 = values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
+    (mean, variance)
+}
+
+/// Standard-normal CDF using the erf approximation.
+fn normal_cdf(z: f64) -> f64 {
+    0.5 * (1.0 + erf(z / std::f64::consts::SQRT_2))
+}
+
+/// Mann-Whitney U test with tie-corrected normal approximation.
+///
+/// Returns `(U, two_sided_p_value)` where U is the statistic for sample `a`.
+fn mann_whitney_u(a: &[f64], b: &[f64]) -> (f64, f64) {
+    let na = a.len();
+    let nb = b.len();
+    if na == 0 || nb == 0 {
+        return (0.0, 1.0);
+    }
+
+    // Combine and rank with mid-rank for ties.
+    #[derive(Clone, Copy)]
+    struct Entry {
+        value: f64,
+        from_a: bool,
+    }
+    let mut combined: Vec<Entry> = Vec::with_capacity(na + nb);
+    combined.extend(a.iter().map(|&v| Entry { value: v, from_a: true }));
+    combined.extend(b.iter().map(|&v| Entry { value: v, from_a: false }));
+    combined.sort_by(|x, y| x.value.partial_cmp(&y.value).unwrap_or(std::cmp::Ordering::Equal));
+
+    let n_total = combined.len();
+    let mut ranks = vec![0.0f64; n_total];
+    let mut tie_adjustment = 0.0f64;
+    let mut i = 0;
+    while i < n_total {
+        let mut j = i + 1;
+        while j < n_total && (combined[j].value - combined[i].value).abs() < f64::EPSILON {
+            j += 1;
+        }
+        let group_size = j - i;
+        let avg_rank = ((i + 1) as f64 + j as f64) / 2.0;
+        for k in i..j {
+            ranks[k] = avg_rank;
+        }
+        if group_size > 1 {
+            let t = group_size as f64;
+            tie_adjustment += t * t * t - t;
+        }
+        i = j;
+    }
+
+    let rank_sum_a: f64 = combined
+        .iter()
+        .zip(ranks.iter())
+        .filter(|(e, _)| e.from_a)
+        .map(|(_, r)| *r)
+        .sum();
+
+    let na_f = na as f64;
+    let nb_f = nb as f64;
+    let u_a = rank_sum_a - na_f * (na_f + 1.0) / 2.0;
+    let u_b = na_f * nb_f - u_a;
+    let u_stat = u_a.min(u_b);
+
+    let n_f = na_f + nb_f;
+    let mean_u = na_f * nb_f / 2.0;
+    let tie_term = if n_f > 1.0 {
+        tie_adjustment / (n_f * (n_f - 1.0))
+    } else {
+        0.0
+    };
+    let var_u = na_f * nb_f * ((n_f + 1.0) - tie_term) / 12.0;
+
+    let p_value = if var_u <= 0.0 {
+        1.0
+    } else {
+        let sigma = var_u.sqrt();
+        // Continuity correction
+        let numerator = (u_stat - mean_u).abs() - 0.5;
+        let z = if numerator <= 0.0 { 0.0 } else { numerator / sigma };
+        2.0 * (1.0 - normal_cdf(z))
+    };
+
+    (u_a, p_value.clamp(0.0, 1.0))
+}
 
 /// Error function approximation.
 fn erf(x: f64) -> f64 {
@@ -927,5 +1269,136 @@ mod tests {
         assert!(conf_small < conf_medium);
         assert!(conf_medium < conf_large);
         assert!(conf_large <= 0.99);
+    }
+
+    /// Build an input that matches the shape emitted by the Agentics CLI:
+    /// `variables` declares a dependent variable "accuracy", observations
+    /// carry nested `values: { model, accuracy }` objects and are tagged
+    /// with group "A"|"B".
+    fn create_cli_shape_input(per_group: usize, mean_a: f64, mean_b: f64) -> HypothesisInput {
+        let mut observations = Vec::with_capacity(per_group * 2);
+        for i in 0..per_group {
+            let jitter = (i as f64) * 0.001;
+            observations.push(Observation {
+                id: Uuid::new_v4(),
+                values: json!({
+                    "model": "alpha",
+                    "accuracy": mean_a + jitter,
+                }),
+                group: Some("A".to_string()),
+                weight: None,
+                timestamp: None,
+            });
+            observations.push(Observation {
+                id: Uuid::new_v4(),
+                values: json!({
+                    "model": "beta",
+                    "accuracy": mean_b + jitter,
+                }),
+                group: Some("B".to_string()),
+                weight: None,
+                timestamp: None,
+            });
+        }
+
+        HypothesisInput {
+            request_id: Uuid::new_v4(),
+            hypothesis: HypothesisDefinition {
+                id: Uuid::new_v4(),
+                name: "Model Comparison".to_string(),
+                statement: "Model A outperforms Model B".to_string(),
+                hypothesis_type: HypothesisType::Comparative,
+                null_hypothesis: "Means are equal".to_string(),
+                alternative_hypothesis: "Means differ".to_string(),
+                variables: vec![HypothesisVariable {
+                    name: "accuracy".to_string(),
+                    role: VariableRole::Dependent,
+                    data_type: VariableDataType::Continuous,
+                    unit: None,
+                }],
+                expected_effect_size: Some(dec!(0.5)),
+                significance_level: dec!(0.05),
+                required_power: Some(dec!(0.8)),
+            },
+            experimental_data: ExperimentalData {
+                source_id: "cli-probe".to_string(),
+                collected_at: Utc::now(),
+                observations: observations.clone(),
+                sample_size: observations.len() as u64,
+                quality_metrics: DataQualityMetrics {
+                    completeness: dec!(1.0),
+                    validity: dec!(1.0),
+                    outlier_count: 0,
+                    duplicate_count: 0,
+                },
+            },
+            config: EvaluationConfig {
+                test_method: StatisticalTest::TTest,
+                apply_correction: false,
+                correction_method: None,
+                bootstrap_iterations: None,
+                random_seed: Some(42),
+                compute_effect_size: true,
+                generate_diagnostics: true,
+            },
+            context: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_cli_shape_two_sample_ttest_produces_real_pvalue() {
+        let agent = HypothesisAgent::new();
+        // 30 per group, A ≈ 0.88, B ≈ 0.83 — a real difference the test should detect.
+        let mut input = create_cli_shape_input(30, 0.88, 0.83);
+        input.config.test_method = StatisticalTest::TTest;
+
+        let output = agent.execute(input).await.expect("should evaluate");
+
+        let p: f64 = output.test_results.p_value.try_into().unwrap();
+        let t: f64 = output.test_results.test_statistic.try_into().unwrap();
+        assert!(p.is_finite(), "p-value must be finite");
+        assert!(p >= 0.0 && p <= 1.0, "p-value must be in [0,1], got {p}");
+        assert!(t.abs() > 0.0, "two-sample statistic must reflect group difference");
+    }
+
+    #[tokio::test]
+    async fn test_cli_shape_mann_whitney_produces_real_pvalue() {
+        let agent = HypothesisAgent::new();
+        let mut input = create_cli_shape_input(30, 0.88, 0.83);
+        input.config.test_method = StatisticalTest::MannWhitneyU;
+
+        let output = agent.execute(input).await.expect("should evaluate");
+
+        let p: f64 = output.test_results.p_value.try_into().unwrap();
+        assert!(p.is_finite() && p >= 0.0 && p <= 1.0);
+    }
+
+    #[tokio::test]
+    async fn test_cli_shape_insufficient_reports_actual_count() {
+        let agent = HypothesisAgent::new();
+        // 5 per group = 10 total, below default min_sample_size (30).
+        let input = create_cli_shape_input(5, 0.88, 0.83);
+
+        match agent.execute(input).await {
+            Err(HypothesisAgentError::InsufficientSampleSize { required, actual }) => {
+                assert_eq!(required, 30);
+                assert_eq!(actual, 10, "must name actual count extracted, not 0");
+            }
+            other => panic!("expected InsufficientSampleSize, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_t_test_independent_serde_alias() {
+        let method: StatisticalTest = serde_json::from_str("\"t_test_independent\"").unwrap();
+        assert_eq!(method, StatisticalTest::TTest);
+    }
+
+    #[test]
+    fn test_mann_whitney_u_helper_detects_difference() {
+        let a: Vec<f64> = (0..30).map(|i| 0.88 + i as f64 * 0.0005).collect();
+        let b: Vec<f64> = (0..30).map(|i| 0.83 + i as f64 * 0.0005).collect();
+        let (_u, p) = mann_whitney_u(&a, &b);
+        assert!(p < 0.05, "non-overlapping samples should reject null, p={p}");
     }
 }

@@ -33,3 +33,6 @@ config/local.toml
 .claude-flow/
 .mcp.json
 CLAUDE.md
+
+# Local tooling (Google Cloud SDK etc.)
+.tools/

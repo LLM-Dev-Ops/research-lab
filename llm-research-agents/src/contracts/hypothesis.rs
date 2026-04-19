@@ -74,7 +74,8 @@ pub enum HypothesisType {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum StatisticalTest {
-    /// Student's t-test
+    /// Student's t-test (one- or two-sample; accepts `t_test_independent` alias)
+    #[serde(alias = "t_test_independent", alias = "t_test_one_sample")]
     TTest,
     /// Welch's t-test (unequal variances)
     WelchTTest,

@@ -96,6 +96,28 @@ pub struct Confidence {
     pub ci_upper: Option<Decimal>,
 }
 
+impl Confidence {
+    /// Validate that the confidence value is in [0.0, 1.0] and that the
+    /// confidence-interval bounds (if supplied) are ordered lower ≤ upper.
+    pub fn validate(&self) -> Result<(), String> {
+        use rust_decimal_macros::dec;
+        if self.value < dec!(0) || self.value > dec!(1) {
+            return Err(format!(
+                "confidence value must be in [0.0, 1.0]; got {}",
+                self.value
+            ));
+        }
+        if let (Some(lo), Some(hi)) = (self.ci_lower, self.ci_upper) {
+            if lo > hi {
+                return Err(format!(
+                    "ci_lower ({lo}) must be ≤ ci_upper ({hi})"
+                ));
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Method used to calculate confidence.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]

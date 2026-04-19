@@ -179,6 +179,7 @@ impl HypothesisHandler {
                 info!(
                     hypothesis_status = ?output.status,
                     event_id = %event.id,
+                    persisted = storage_ref.is_some(),
                     "Hypothesis evaluation completed successfully"
                 );
 
@@ -191,7 +192,7 @@ impl HypothesisHandler {
                 // Attach decision event as artifact to agent span
                 agent_span.add_artifact(ExecutionArtifact {
                     id: format!("decision-event-{}", event.id),
-                    uri: Some(storage_ref.clone()),
+                    uri: storage_ref.clone(),
                     hash: Some(event.inputs_hash.clone()),
                     filename: None,
                     artifact_type: "decision_event".to_string(),
@@ -201,6 +202,7 @@ impl HypothesisHandler {
                         "confidence": event.confidence.value.to_string(),
                         "agent_id": event.agent_id,
                         "agent_version": event.agent_version,
+                        "persisted": storage_ref.is_some(),
                     }),
                 });
 
@@ -223,7 +225,7 @@ impl HypothesisHandler {
                     success: true,
                     request_id,
                     output: Some(output),
-                    decision_event_ref: Some(DecisionEventRef {
+                    decision_event_ref: storage_ref.map(|storage_ref| DecisionEventRef {
                         event_id: event.id,
                         storage_ref,
                     }),
@@ -263,17 +265,30 @@ impl HypothesisHandler {
     }
 
     /// Execute the full evaluation lifecycle.
+    ///
+    /// Persistence to ruvector-service is best-effort: a failure is logged as
+    /// a warning but does not fail the request, matching the metric-handler
+    /// pattern. The returned `Option<String>` is `Some(storage_ref)` when the
+    /// decision event was persisted, `None` when persistence failed.
     async fn execute_evaluation(
         &self,
         input: HypothesisInput,
-    ) -> Result<(HypothesisOutput, DecisionEvent, String), HandlerError> {
-        // 1. Validate and execute agent
+    ) -> Result<(HypothesisOutput, DecisionEvent, Option<String>), HandlerError> {
         let (output, event) = self.agent.invoke(input).await?;
 
-        // 2. Persist DecisionEvent to ruvector-service
-        let persisted = self.ruvector_client.persist_decision_event(event.clone()).await?;
+        let storage_ref = match self.ruvector_client.persist_decision_event(event.clone()).await {
+            Ok(persisted) => Some(persisted.storage_ref),
+            Err(e) => {
+                tracing::warn!(
+                    error = %e,
+                    event_id = %event.id,
+                    "DecisionEvent persistence failed; returning evaluation result without storage_ref"
+                );
+                None
+            }
+        };
 
-        Ok((output, event, persisted.storage_ref))
+        Ok((output, event, storage_ref))
     }
 }
 
