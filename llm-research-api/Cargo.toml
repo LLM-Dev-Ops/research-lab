@@ -20,24 +20,21 @@ llm-research-workflow.workspace = true
 # across the LLM-Dev-Ops ecosystem.
 #
 # Migration Notes:
-# - infra-logging replaces local observability/logging.rs
-# - infra-tracing replaces local observability/tracing.rs
-# - infra-metrics replaces local observability/metrics.rs
+# - infra-otel replaces local observability/{logging,tracing,metrics}.rs
 # - infra-cache replaces local performance/cache.rs
-# - infra-resilience replaces local resilience/ modules
-# - infra-health replaces local observability/health.rs
-# - infra-error provides standardized error types
+# - infra-retry + infra-rate-limit replace local resilience/ modules
+# - infra-errors provides standardized error types
 # - infra-config provides unified configuration loading
+#
+# infra has no aggregator crate and no health crate; local observability/health.rs
+# has no infra equivalent and stays local (ADR-015).
 # =============================================================================
-infra-core.workspace = true
 infra-config.workspace = true
-infra-logging.workspace = true
-infra-tracing.workspace = true
-infra-metrics.workspace = true
+infra-otel.workspace = true
 infra-cache.workspace = true
-infra-resilience.workspace = true
-infra-health.workspace = true
-infra-error.workspace = true
+infra-retry.workspace = true
+infra-rate-limit.workspace = true
+infra-errors.workspace = true
 
 # Async runtime and HTTP
 tokio.workspace = true

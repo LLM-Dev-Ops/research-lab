@@ -6,6 +6,30 @@
 
 ---
 
+> **CORRECTION (ADR-015, 2026-07-27) — most module names below do not exist.**
+>
+> The `infra` repo publishes 19 unprefixed crates and has no aggregator, no
+> `logging`/`tracing`/`metrics`/`resilience`/`health` crate, and no feature-gated
+> facade. The module list, the dependency snippets, and the npm
+> `@llm-dev-ops/infra-*` package names in this document were never resolvable.
+> The manifests have been corrected; this document body has not been rewritten.
+>
+> | Claimed here | Real crate |
+> |---|---|
+> | `infra-core` | none — no aggregator crate exists |
+> | `infra-config` | `infra-config` |
+> | `infra-logging`, `infra-tracing`, `infra-metrics` | `infra-otel` (all three) |
+> | `infra-cache` | `infra-cache` |
+> | `infra-resilience` | `infra-retry` + `infra-rate-limit` |
+> | `infra-health` | none — health checks stay local |
+> | `infra-error` | `infra-errors` |
+> | `infra-llm` | `infra-llm-client` |
+> | `@llm-dev-ops/infra-*` | single `@llm-dev-ops/infra` with subpath exports |
+>
+> Treat the sections below as historical intent, not as an API reference.
+
+---
+
 ## Executive Summary
 
 This document describes the Phase 2B integration of LLM-Dev-Ops Infra modules into the LLM-Research-Lab repository. Phase 2B ensures that Research Lab consumes standardized infrastructure components for configuration loading, structured logging, distributed tracing, error utilities, caching, retry logic, rate limiting, and health checks.
