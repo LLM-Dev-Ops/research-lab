@@ -17,26 +17,22 @@ pub mod response;
 // are being migrated to use these Infra modules for ecosystem consistency.
 //
 // Migration Status:
-// - infra_core: Available ✓
-// - infra_config: Available ✓
-// - infra_logging: Available (replaces observability/logging.rs)
-// - infra_tracing: Available (replaces observability/tracing.rs)
-// - infra_metrics: Available (replaces observability/metrics.rs)
+// - infra_config: Available (unified configuration loading)
+// - infra_otel: Available (replaces observability/{logging,tracing,metrics}.rs)
 // - infra_cache: Available (replaces performance/cache.rs)
-// - infra_resilience: Available (replaces resilience/ modules)
-// - infra_health: Available (replaces observability/health.rs)
-// - infra_error: Available (supplements error.rs)
+// - infra_retry, infra_rate_limit: Available (replace resilience/ modules)
+// - infra_errors: Available (supplements error.rs)
+//
+// infra publishes no aggregator crate and no health crate, so
+// observability/health.rs has no infra equivalent and stays local (ADR-015).
 // =============================================================================
 pub mod infra {
-    pub use infra_core as core;
-    pub use infra_config as config;
-    pub use infra_logging as logging;
-    pub use infra_tracing as tracing;
-    pub use infra_metrics as metrics;
     pub use infra_cache as cache;
-    pub use infra_resilience as resilience;
-    pub use infra_health as health;
-    pub use infra_error as error;
+    pub use infra_config as config;
+    pub use infra_errors as errors;
+    pub use infra_otel as otel;
+    pub use infra_rate_limit as rate_limit;
+    pub use infra_retry as retry;
 }
 
 use axum::{

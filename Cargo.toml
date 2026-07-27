@@ -67,6 +67,16 @@ url = "2.5"
 llm-research-core = { path = "llm-research-core" }
 llm-research-agents = { path = "llm-research-agents" }
 
+# LLM-Dev-Ops shared infrastructure crates (ADR-015).
+# The infra repo publishes 19 unprefixed `infra-*` crates. It has no git tags and
+# nothing on crates.io, so these are pinned to a rev on `main`.
+infra-config = { git = "https://github.com/LLM-Dev-Ops/infra", rev = "a8bc89c190f63b139812f30a54e21a25b8f70e81" }
+infra-otel = { git = "https://github.com/LLM-Dev-Ops/infra", rev = "a8bc89c190f63b139812f30a54e21a25b8f70e81" }
+infra-errors = { git = "https://github.com/LLM-Dev-Ops/infra", rev = "a8bc89c190f63b139812f30a54e21a25b8f70e81" }
+infra-cache = { git = "https://github.com/LLM-Dev-Ops/infra", rev = "a8bc89c190f63b139812f30a54e21a25b8f70e81" }
+infra-retry = { git = "https://github.com/LLM-Dev-Ops/infra", rev = "a8bc89c190f63b139812f30a54e21a25b8f70e81" }
+infra-rate-limit = { git = "https://github.com/LLM-Dev-Ops/infra", rev = "a8bc89c190f63b139812f30a54e21a25b8f70e81" }
+
 [profile.dev]
 opt-level = 0
 debug = true
