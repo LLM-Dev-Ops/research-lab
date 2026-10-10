@@ -43,4 +43,6 @@ Flywheel used a deterministic evidence proposer with a frozen six-item CORS hold
 
 The CI addition runs a clean npm install, the Cloud Function contract suite, and the production dependency audit on Linux with commit-pinned checkout and Node setup actions. It is included in the existing `All Checks Pass` aggregate and does not remove or relax any Rust gate.
 
+The first exact GitHub run proved the Cloud Function job green but found every existing Rust job failing during job setup because the workflow referenced the nonexistent `dtolnay/rust-action`. The candidate replaces those references with the official `dtolnay/rust-toolchain` action pinned to `e2a55d2ffb04f378e9626c28d38b36d230d1e12f` and explicitly requests the stable toolchain. This repairs evaluator execution without changing a Rust test, lint rule, or aggregate requirement.
+
 If a post-merge regression is discovered, revert the PR merge commit. This restores the previous CORS behavior, test script, and CI job as one atomic rollback. No deployment or package publication is part of this change.
