@@ -25,7 +25,9 @@ pub struct AgentIdentity {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AgentClassification {
+    /// Represents the hypothesis evaluation case.
     HypothesisEvaluation,
+    /// Represents the experimental metrics case.
     ExperimentalMetrics,
 }
 
@@ -78,8 +80,11 @@ pub enum CliInput {
 #[serde(rename_all = "snake_case")]
 pub enum CliOutputFormat {
     #[default]
+    /// Represents the json case.
     Json,
+    /// Represents the yaml case.
     Yaml,
+    /// Represents the table case.
     Table,
 }
 

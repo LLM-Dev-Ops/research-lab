@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use validator::Validate;
 
-use super::ids::{ExperimentId, UserId};
 use super::config::ExperimentConfig;
+use super::ids::{ExperimentId, UserId};
 
 // ===== Experiment Status =====
 
@@ -355,13 +355,8 @@ mod tests {
         let user_id = UserId::new();
         let config = ExperimentConfig::default();
 
-        let mut experiment = Experiment::new(
-            "Test Experiment".to_string(),
-            None,
-            None,
-            user_id,
-            config,
-        );
+        let mut experiment =
+            Experiment::new("Test Experiment".to_string(), None, None, user_id, config);
 
         // Activate experiment
         assert!(experiment.activate().is_ok());
@@ -395,13 +390,8 @@ mod tests {
         let collaborator2 = UserId::new();
         let config = ExperimentConfig::default();
 
-        let mut experiment = Experiment::new(
-            "Test Experiment".to_string(),
-            None,
-            None,
-            owner_id,
-            config,
-        );
+        let mut experiment =
+            Experiment::new("Test Experiment".to_string(), None, None, owner_id, config);
 
         // Add collaborators
         experiment.add_collaborator(collaborator1);
@@ -424,14 +414,9 @@ mod tests {
         let user_id = UserId::new();
         let config = ExperimentConfig::default();
 
-        let mut experiment = Experiment::new(
-            "Test Experiment".to_string(),
-            None,
-            None,
-            user_id,
-            config,
-        )
-        .with_tags(vec!["test".to_string(), "ml".to_string()]);
+        let mut experiment =
+            Experiment::new("Test Experiment".to_string(), None, None, user_id, config)
+                .with_tags(vec!["test".to_string(), "ml".to_string()]);
 
         assert_eq!(experiment.tags.len(), 2);
 
@@ -453,13 +438,8 @@ mod tests {
         let user_id = UserId::new();
         let config = ExperimentConfig::default();
 
-        let mut experiment = Experiment::new(
-            "Test Experiment".to_string(),
-            None,
-            None,
-            user_id,
-            config,
-        );
+        let mut experiment =
+            Experiment::new("Test Experiment".to_string(), None, None, user_id, config);
 
         // Cannot pause from Draft
         assert!(experiment.pause().is_err());

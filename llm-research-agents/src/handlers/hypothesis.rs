@@ -27,7 +27,7 @@ use uuid::Uuid;
 
 use crate::agents::{Agent, HypothesisAgent, HypothesisAgentError, HYPOTHESIS_AGENT_ID};
 use crate::clients::{RuVectorClient, RuVectorError, RuVectorPersistence};
-use crate::contracts::{HypothesisInput, HypothesisOutput, AgentError, DecisionEvent};
+use crate::contracts::{AgentError, DecisionEvent, HypothesisInput, HypothesisOutput};
 use crate::execution::{ExecutionArtifact, ExecutionContext, ExecutionSpan};
 use crate::telemetry::TelemetryEmitter;
 
@@ -48,8 +48,11 @@ pub struct HypothesisEvaluateRequest {
 /// Trace context for distributed tracing.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct TraceContext {
+    /// The distributed trace identifier.
     pub trace_id: String,
+    /// The current span identifier.
     pub span_id: String,
+    /// The optional parent span identifier.
     pub parent_span_id: Option<String>,
 }
 
@@ -75,7 +78,9 @@ pub struct HypothesisEvaluateResponse {
 /// Reference to persisted decision event.
 #[derive(Debug, Serialize)]
 pub struct DecisionEventRef {
+    /// The event id.
     pub event_id: Uuid,
+    /// The optional RuVector storage reference.
     pub storage_ref: String,
 }
 
@@ -83,15 +88,19 @@ pub struct DecisionEventRef {
 #[derive(Debug, thiserror::Error)]
 pub enum HandlerError {
     #[error("Agent error: {0}")]
+    /// Represents the agent case.
     Agent(#[from] HypothesisAgentError),
 
     #[error("Persistence error: {0}")]
+    /// Represents the persistence case.
     Persistence(#[from] RuVectorError),
 
     #[error("Serialization error: {0}")]
+    /// Represents the serialization case.
     Serialization(#[from] serde_json::Error),
 
     #[error("Configuration error: {0}")]
+    /// Represents the configuration case.
     Configuration(String),
 }
 
@@ -116,8 +125,8 @@ impl HypothesisHandler {
     /// Create a new handler with default configuration.
     pub fn new() -> Result<Self, HandlerError> {
         let agent = HypothesisAgent::new();
-        let ruvector_client = RuVectorClient::from_env()
-            .map_err(|e| HandlerError::Configuration(e.to_string()))?;
+        let ruvector_client =
+            RuVectorClient::from_env().map_err(|e| HandlerError::Configuration(e.to_string()))?;
         let telemetry = TelemetryEmitter::new();
 
         Ok(Self {
@@ -162,16 +171,14 @@ impl HypothesisHandler {
         info!("Handling hypothesis evaluation request");
 
         // Create trace span if context provided
-        let _span = if let Some(ref ctx) = request.trace_context {
-            Some(span!(
+        let _span = request.trace_context.as_ref().map(|ctx| {
+            span!(
                 Level::INFO,
                 "hypothesis_evaluation",
                 trace_id = %ctx.trace_id,
                 span_id = %ctx.span_id
-            ))
-        } else {
-            None
-        };
+            )
+        });
 
         // Execute agent with full lifecycle
         match self.execute_evaluation(request.input).await {
@@ -184,10 +191,9 @@ impl HypothesisHandler {
                 );
 
                 // Emit success telemetry
-                self.telemetry.emit_success(
-                    &event,
-                    request.trace_context.as_ref(),
-                ).await;
+                self.telemetry
+                    .emit_success(&event, request.trace_context.as_ref())
+                    .await;
 
                 // Attach decision event as artifact to agent span
                 agent_span.add_artifact(ExecutionArtifact {
@@ -238,11 +244,9 @@ impl HypothesisHandler {
                 error!(error = %e, "Hypothesis evaluation failed");
 
                 // Emit failure telemetry
-                self.telemetry.emit_failure(
-                    &e.to_string(),
-                    request_id,
-                    request.trace_context.as_ref(),
-                ).await;
+                self.telemetry
+                    .emit_failure(&e.to_string(), request_id, request.trace_context.as_ref())
+                    .await;
 
                 agent_span.fail(e.to_string());
 
@@ -276,7 +280,11 @@ impl HypothesisHandler {
     ) -> Result<(HypothesisOutput, DecisionEvent, Option<String>), HandlerError> {
         let (output, event) = self.agent.invoke(input).await?;
 
-        let storage_ref = match self.ruvector_client.persist_decision_event(event.clone()).await {
+        let storage_ref = match self
+            .ruvector_client
+            .persist_decision_event(event.clone())
+            .await
+        {
             Ok(persisted) => Some(persisted.storage_ref),
             Err(e) => {
                 tracing::warn!(
@@ -295,12 +303,22 @@ impl HypothesisHandler {
 /// Map errors to error codes.
 fn error_code(error: &HandlerError) -> String {
     match error {
-        HandlerError::Agent(HypothesisAgentError::Validation(_)) => "HYPOTHESIS_INPUT_INVALID".to_string(),
-        HandlerError::Agent(HypothesisAgentError::InsufficientSampleSize { .. }) => "HYPOTHESIS_SAMPLE_SIZE".to_string(),
-        HandlerError::Agent(HypothesisAgentError::StatisticalComputation(_)) => "HYPOTHESIS_COMPUTATION".to_string(),
-        HandlerError::Agent(HypothesisAgentError::Configuration(_)) => "HYPOTHESIS_CONFIG".to_string(),
+        HandlerError::Agent(HypothesisAgentError::Validation(_)) => {
+            "HYPOTHESIS_INPUT_INVALID".to_string()
+        }
+        HandlerError::Agent(HypothesisAgentError::InsufficientSampleSize { .. }) => {
+            "HYPOTHESIS_SAMPLE_SIZE".to_string()
+        }
+        HandlerError::Agent(HypothesisAgentError::StatisticalComputation(_)) => {
+            "HYPOTHESIS_COMPUTATION".to_string()
+        }
+        HandlerError::Agent(HypothesisAgentError::Configuration(_)) => {
+            "HYPOTHESIS_CONFIG".to_string()
+        }
         HandlerError::Agent(HypothesisAgentError::Internal(_)) => "HYPOTHESIS_INTERNAL".to_string(),
-        HandlerError::Agent(HypothesisAgentError::BudgetExceeded(_)) => "HYPOTHESIS_BUDGET_EXCEEDED".to_string(),
+        HandlerError::Agent(HypothesisAgentError::BudgetExceeded(_)) => {
+            "HYPOTHESIS_BUDGET_EXCEEDED".to_string()
+        }
         HandlerError::Persistence(_) => "HYPOTHESIS_PERSISTENCE".to_string(),
         HandlerError::Serialization(_) => "HYPOTHESIS_SERIALIZATION".to_string(),
         HandlerError::Configuration(_) => "HYPOTHESIS_CONFIG".to_string(),
@@ -309,10 +327,7 @@ fn error_code(error: &HandlerError) -> String {
 
 /// Health check handler.
 pub async fn health_check(ruvector_client: &RuVectorClient) -> bool {
-    match ruvector_client.health_check().await {
-        Ok(healthy) => healthy,
-        Err(_) => false,
-    }
+    ruvector_client.health_check().await.unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -387,7 +402,11 @@ mod tests {
 
     #[test]
     fn test_error_code_mapping() {
-        let validation_error = HandlerError::Agent(HypothesisAgentError::Validation("test".to_string()));
+        let request = create_test_request();
+        assert_eq!(request.input.experimental_data.sample_size, 100);
+
+        let validation_error =
+            HandlerError::Agent(HypothesisAgentError::Validation("test".to_string()));
         assert_eq!(error_code(&validation_error), "HYPOTHESIS_INPUT_INVALID");
 
         let sample_error = HandlerError::Agent(HypothesisAgentError::InsufficientSampleSize {
@@ -395,13 +414,5 @@ mod tests {
             actual: 10,
         });
         assert_eq!(error_code(&sample_error), "HYPOTHESIS_SAMPLE_SIZE");
-    }
-
-    #[test]
-    fn test_agent_span_included_in_handle_result() {
-        // Verify the handle signature returns an ExecutionSpan
-        // (compile-time check via type annotation)
-        let _: fn(&HypothesisHandler, HypothesisEvaluateRequest, Uuid)
-            -> std::pin::Pin<Box<dyn std::future::Future<Output = (HypothesisEvaluateResponse, ExecutionSpan)> + Send + '_>>;
     }
 }

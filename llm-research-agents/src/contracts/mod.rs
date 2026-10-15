@@ -11,12 +11,12 @@
 //! - All inputs and outputs are validated against these contracts
 //! - DecisionEvents follow the mandated schema
 
+pub mod common;
 pub mod decision_event;
 pub mod hypothesis;
 pub mod metrics;
-pub mod common;
 
+pub use common::*;
 pub use decision_event::*;
 pub use hypothesis::*;
 pub use metrics::*;
-pub use common::*;

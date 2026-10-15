@@ -168,13 +168,7 @@ fn test_dataset_sample_serialization_roundtrip() {
     let expected = json!({"answer": "Artificial Intelligence"});
     let metadata = json!({"source": "human", "quality": 0.95});
 
-    let original = DatasetSample::new(
-        dataset_id,
-        42,
-        input,
-        Some(expected),
-        metadata,
-    );
+    let original = DatasetSample::new(dataset_id, 42, input, Some(expected), metadata);
 
     let json = serde_json::to_string(&original).unwrap();
     let deserialized: DatasetSample = serde_json::from_str(&json).unwrap();
@@ -212,11 +206,7 @@ fn test_prompt_template_serialization_roundtrip() {
 fn test_prompt_template_with_multiline() {
     let template = "System: {{system_prompt}}\n\nUser: {{user_input}}\n\nAssistant:";
 
-    let original = PromptTemplate::new(
-        "Chat Template".to_string(),
-        None,
-        template.to_string(),
-    );
+    let original = PromptTemplate::new("Chat Template".to_string(), None, template.to_string());
 
     let json = serde_json::to_string(&original).unwrap();
     let deserialized: PromptTemplate = serde_json::from_str(&json).unwrap();
@@ -255,17 +245,17 @@ fn test_evaluation_serialization_roundtrip() {
         "f1": 0.92
     });
 
-    let original = Evaluation::new(
+    let original = Evaluation::new(NewEvaluation {
         experiment_id,
         sample_id,
-        "Input text".to_string(),
-        "Output text".to_string(),
-        Some("Expected".to_string()),
-        250,
-        20,
-        Some(rust_decimal::Decimal::new(25, 5)),
+        input: "Input text".to_string(),
+        output: "Output text".to_string(),
+        expected_output: Some("Expected".to_string()),
+        latency_ms: 250,
+        token_count: 20,
+        cost: Some(rust_decimal::Decimal::new(25, 5)),
         metrics,
-    );
+    });
 
     let json = serde_json::to_string(&original).unwrap();
     let deserialized: Evaluation = serde_json::from_str(&json).unwrap();
@@ -437,7 +427,7 @@ fn test_parameter_value_serialization() {
     let values = vec![
         ParameterValue::String("test".to_string()),
         ParameterValue::Integer(42),
-        ParameterValue::Float(3.14),
+        ParameterValue::Float(3.125),
         ParameterValue::Boolean(true),
     ];
 
@@ -664,7 +654,7 @@ fn test_semantic_version_serialization() {
 
 #[test]
 fn test_content_hash_serialization() {
-    let original = ContentHash::from_str("test data for hashing");
+    let original = ContentHash::from_content("test data for hashing");
     let json = serde_json::to_string(&original).unwrap();
     let deserialized: ContentHash = serde_json::from_str(&json).unwrap();
 
@@ -867,7 +857,10 @@ fn test_complete_experiment_config_roundtrip() {
 
     assert_eq!(config.model_configs.len(), deserialized.model_configs.len());
     assert_eq!(config.dataset_refs.len(), deserialized.dataset_refs.len());
-    assert_eq!(config.metric_configs.len(), deserialized.metric_configs.len());
+    assert_eq!(
+        config.metric_configs.len(),
+        deserialized.metric_configs.len()
+    );
     assert_eq!(
         config.model_configs[0].model_name,
         deserialized.model_configs[0].model_name

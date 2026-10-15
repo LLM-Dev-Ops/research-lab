@@ -65,7 +65,10 @@ pub trait Agent: Send + Sync {
     /// Full invocation cycle: validate, execute, build event.
     ///
     /// This is the primary entry point for agent invocation.
-    async fn invoke(&self, input: Self::Input) -> Result<(Self::Output, DecisionEvent), Self::Error> {
+    async fn invoke(
+        &self,
+        input: Self::Input,
+    ) -> Result<(Self::Output, DecisionEvent), Self::Error> {
         // Validate input
         self.validate_input(&input)?;
 
@@ -84,7 +87,10 @@ pub trait Agent: Send + Sync {
 #[async_trait]
 pub trait BatchAgent: Agent {
     /// Execute multiple inputs in batch.
-    async fn execute_batch(&self, inputs: Vec<Self::Input>) -> Result<Vec<Self::Output>, Self::Error>;
+    async fn execute_batch(
+        &self,
+        inputs: Vec<Self::Input>,
+    ) -> Result<Vec<Self::Output>, Self::Error>;
 }
 
 /// Trait for agents that can estimate their confidence.
@@ -159,8 +165,11 @@ pub struct BudgetViolation {
 
 impl std::fmt::Display for BudgetViolation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "BudgetViolation[{}]: {} (limit={}, actual={})",
-            self.budget_type, self.message, self.limit, self.actual)
+        write!(
+            f,
+            "BudgetViolation[{}]: {} (limit={}, actual={})",
+            self.budget_type, self.message, self.limit, self.actual
+        )
     }
 }
 

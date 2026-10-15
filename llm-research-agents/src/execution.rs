@@ -319,7 +319,9 @@ pub enum ExecutionError {
 pub fn validate_execution_context(
     ctx: &Option<ExecutionContext>,
 ) -> Result<&ExecutionContext, ExecutionError> {
-    let ctx = ctx.as_ref().ok_or(ExecutionError::MissingExecutionContext)?;
+    let ctx = ctx
+        .as_ref()
+        .ok_or(ExecutionError::MissingExecutionContext)?;
     if ctx.parent_span_id.is_nil() {
         return Err(ExecutionError::MissingParentSpanId);
     }
@@ -477,8 +479,8 @@ mod tests {
             result: Some(serde_json::json!({"status": "ok"})),
         };
 
-        let json = serde_json::to_string(&result)
-            .expect("ExecutionResult must be JSON-serializable");
+        let json =
+            serde_json::to_string(&result).expect("ExecutionResult must be JSON-serializable");
         assert!(json.contains("execution_id"));
         assert!(json.contains("repo_span"));
         assert!(json.contains("result"));
@@ -486,9 +488,7 @@ mod tests {
 
     #[test]
     fn test_execution_result_rejected() {
-        let result = ExecutionResult::<serde_json::Value>::rejected(
-            "no context".to_string(),
-        );
+        let result = ExecutionResult::<serde_json::Value>::rejected("no context".to_string());
 
         assert!(result.execution_id.is_nil());
         assert_eq!(result.repo_span.status, SpanStatus::Failed);

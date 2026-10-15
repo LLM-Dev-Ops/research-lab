@@ -47,17 +47,14 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use llm_research_agents::{RuVectorClient, RuVectorPersistence};
 
 // Agentics Execution System imports
-use llm_research_agents::{
-    ExecutionResult, ExecutionSpan,
-    validate_execution_context,
-};
+use llm_research_agents::{validate_execution_context, ExecutionResult, ExecutionSpan};
 
 mod config;
 
 // Agent imports
 use llm_research_agents::handlers::{
-    HypothesisHandler, HypothesisEvaluateRequest, HypothesisEvaluateResponse,
-    MetricHandler, MetricComputeRequest, MetricComputeResponse,
+    HypothesisEvaluateRequest, HypothesisEvaluateResponse, HypothesisHandler, MetricComputeRequest,
+    MetricComputeResponse, MetricHandler,
 };
 
 /// Application state for Cloud Run deployment.
@@ -81,7 +78,7 @@ impl CloudRunState {
     pub fn new(config: config::Config) -> Result<Self> {
         let hypothesis_handler = Arc::new(
             HypothesisHandler::new()
-                .map_err(|e| anyhow::anyhow!("Failed to create hypothesis handler: {}", e))?
+                .map_err(|e| anyhow::anyhow!("Failed to create hypothesis handler: {}", e))?,
         );
         let metric_handler = Arc::new(MetricHandler::new());
 
@@ -98,10 +95,9 @@ async fn main() -> Result<()> {
     // Initialize tracing
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| {
-                    "llm_research_lab=debug,llm_research_agents=debug,tower_http=debug".into()
-                }),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "llm_research_lab=debug,llm_research_agents=debug,tower_http=debug".into()
+            }),
         )
         .with(tracing_subscriber::fmt::layer().json())
         .init();
@@ -127,28 +123,26 @@ async fn main() -> Result<()> {
     // =========================================================================
     info!("Validating Ruvector connectivity...");
 
-    let ruvector_client = RuVectorClient::from_env()
-        .map_err(|e| {
-            error!(
-                error = %e,
-                phase = "phase7",
-                layer = "layer2",
-                "Failed to create Ruvector client. ABORTING STARTUP."
-            );
-            anyhow::anyhow!("Failed to create Ruvector client: {}. ABORTING STARTUP.", e)
-        })?;
+    let ruvector_client = RuVectorClient::from_env().map_err(|e| {
+        error!(
+            error = %e,
+            phase = "phase7",
+            layer = "layer2",
+            "Failed to create Ruvector client. ABORTING STARTUP."
+        );
+        anyhow::anyhow!("Failed to create Ruvector client: {}. ABORTING STARTUP.", e)
+    })?;
 
-    let healthy = ruvector_client.health_check().await
-        .map_err(|e| {
-            error!(
-                error = %e,
-                ruvector_url = %config.ruvector_service_url,
-                phase = "phase7",
-                layer = "layer2",
-                "Ruvector health check failed. ABORTING STARTUP."
-            );
-            anyhow::anyhow!("Ruvector health check failed: {}. ABORTING STARTUP.", e)
-        })?;
+    let healthy = ruvector_client.health_check().await.map_err(|e| {
+        error!(
+            error = %e,
+            ruvector_url = %config.ruvector_service_url,
+            phase = "phase7",
+            layer = "layer2",
+            "Ruvector health check failed. ABORTING STARTUP."
+        );
+        anyhow::anyhow!("Ruvector health check failed: {}. ABORTING STARTUP.", e)
+    })?;
 
     if !healthy {
         error!(
@@ -191,20 +185,18 @@ async fn main() -> Result<()> {
         // Health endpoints
         .route("/health", get(health_check))
         .route("/ready", get(readiness_check))
-
         // Agent endpoints (per service topology)
         .route("/api/v1/agents/hypothesis", post(hypothesis_evaluate))
         .route("/api/v1/agents/hypothesis", get(hypothesis_info))
         .route("/api/v1/agents/metric", post(metric_compute))
         .route("/api/v1/agents/metric", get(metric_info))
         .route("/api/v1/agents", get(list_agents))
-
         // Middleware
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
                 .allow_methods(Any)
-                .allow_headers(Any)
+                .allow_headers(Any),
         )
         .layer(TraceLayer::new_for_http())
         .with_state(state);
@@ -246,36 +238,37 @@ async fn health_check() -> &'static str {
 /// PHASE 7 LAYER 2: This endpoint now performs an ACTUAL health check
 /// against ruvector-service. Cloud Run will not route traffic to this
 /// instance if Ruvector is unhealthy or unreachable.
-async fn readiness_check(State(_state): State<CloudRunState>) -> (StatusCode, &'static str) {
+async fn readiness_check(State(state): State<CloudRunState>) -> (StatusCode, &'static str) {
+    let ruvector_url = &state.config.ruvector_service_url;
+
     // Phase 7 Layer 2: Create a client and check Ruvector health
     match RuVectorClient::from_env() {
-        Ok(client) => {
-            match client.health_check().await {
-                Ok(true) => {
-                    (StatusCode::OK, "READY")
-                }
-                Ok(false) => {
-                    warn!(
-                        phase = "phase7",
-                        layer = "layer2",
-                        "Readiness check: Ruvector unhealthy"
-                    );
-                    (StatusCode::SERVICE_UNAVAILABLE, "RUVECTOR_UNHEALTHY")
-                }
-                Err(e) => {
-                    warn!(
-                        error = %e,
-                        phase = "phase7",
-                        layer = "layer2",
-                        "Readiness check: Ruvector unreachable"
-                    );
-                    (StatusCode::SERVICE_UNAVAILABLE, "RUVECTOR_UNREACHABLE")
-                }
+        Ok(client) => match client.health_check().await {
+            Ok(true) => (StatusCode::OK, "READY"),
+            Ok(false) => {
+                warn!(
+                    ruvector_url = %ruvector_url,
+                    phase = "phase7",
+                    layer = "layer2",
+                    "Readiness check: Ruvector unhealthy"
+                );
+                (StatusCode::SERVICE_UNAVAILABLE, "RUVECTOR_UNHEALTHY")
             }
-        }
+            Err(e) => {
+                warn!(
+                    error = %e,
+                    ruvector_url = %ruvector_url,
+                    phase = "phase7",
+                    layer = "layer2",
+                    "Readiness check: Ruvector unreachable"
+                );
+                (StatusCode::SERVICE_UNAVAILABLE, "RUVECTOR_UNREACHABLE")
+            }
+        },
         Err(e) => {
             error!(
                 error = %e,
+                ruvector_url = %ruvector_url,
                 phase = "phase7",
                 layer = "layer2",
                 "Readiness check: Configuration error"
@@ -307,7 +300,10 @@ async fn readiness_check(State(_state): State<CloudRunState>) -> (StatusCode, &'
 async fn hypothesis_evaluate(
     State(state): State<CloudRunState>,
     Json(request): Json<HypothesisEvaluateRequest>,
-) -> (StatusCode, Json<ExecutionResult<HypothesisEvaluateResponse>>) {
+) -> (
+    StatusCode,
+    Json<ExecutionResult<HypothesisEvaluateResponse>>,
+) {
     // ENFORCEMENT: Validate execution context - reject if missing
     let exec_ctx = match validate_execution_context(&request.execution_context) {
         Ok(ctx) => ctx.clone(),
@@ -421,8 +417,7 @@ async fn metric_compute(
     } else {
         let reason = response
             .error
-            .as_ref()
-            .map(|e| e.clone())
+            .clone()
             .unwrap_or_else(|| "Unknown failure".to_string());
         repo_span.fail(reason);
     }

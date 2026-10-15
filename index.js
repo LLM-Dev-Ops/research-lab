@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const SERVICE_NAME = 'research-lab-agents';
 const BACKEND_URL = process.env.RESEARCH_LAB_BACKEND_URL;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
+  ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
   : ['*'];
 
 const AGENT_ROUTES = {
@@ -43,12 +43,17 @@ function buildExecutionMetadata(traceId, executionId) {
 function resolveOrigin(reqOrigin) {
   if (ALLOWED_ORIGINS.includes('*')) return '*';
   if (reqOrigin && ALLOWED_ORIGINS.includes(reqOrigin)) return reqOrigin;
-  return ALLOWED_ORIGINS[0];
+  return undefined;
 }
 
 function setCorsHeaders(req, res) {
   const origin = resolveOrigin(req.headers.origin || '');
-  res.set('Access-Control-Allow-Origin', origin);
+  if (!ALLOWED_ORIGINS.includes('*')) {
+    res.set('Vary', 'Origin');
+  }
+  if (origin) {
+    res.set('Access-Control-Allow-Origin', origin);
+  }
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.set(
     'Access-Control-Allow-Headers',

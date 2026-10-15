@@ -102,22 +102,20 @@ pub mod telemetry;
 
 // Re-export commonly used types
 pub use agents::{
-    Agent,
-    HypothesisAgent, HypothesisAgentError, HYPOTHESIS_AGENT_ID, HYPOTHESIS_AGENT_VERSION,
-    ExperimentalMetricAgent, MetricAgentRuntimeError, METRIC_AGENT_ID, METRIC_AGENT_VERSION,
-    AgentTelemetry,
+    Agent, AgentTelemetry, ExperimentalMetricAgent, HypothesisAgent, HypothesisAgentError,
+    MetricAgentRuntimeError, HYPOTHESIS_AGENT_ID, HYPOTHESIS_AGENT_VERSION, METRIC_AGENT_ID,
+    METRIC_AGENT_VERSION,
 };
 pub use clients::{RuVectorClient, RuVectorConfig, RuVectorError, RuVectorPersistence};
+pub use contracts::metrics::{ComputedMetric, MetricType, MetricsInput, MetricsOutput};
 pub use contracts::{DecisionEvent, DecisionType, HypothesisInput, HypothesisOutput};
-pub use contracts::metrics::{MetricsInput, MetricsOutput, MetricType, ComputedMetric};
-pub use handlers::{HypothesisHandler, HypothesisEvaluateRequest, HypothesisEvaluateResponse};
-pub use handlers::{MetricHandler, MetricComputeRequest, MetricComputeResponse};
-pub use telemetry::TelemetryEmitter;
 pub use execution::{
-    ExecutionContext, ExecutionSpan, ExecutionResult, ExecutionArtifact,
-    ExecutionError, SpanType, SpanStatus,
-    validate_execution_context, REPO_NAME,
+    validate_execution_context, ExecutionArtifact, ExecutionContext, ExecutionError,
+    ExecutionResult, ExecutionSpan, SpanStatus, SpanType, REPO_NAME,
 };
+pub use handlers::{HypothesisEvaluateRequest, HypothesisEvaluateResponse, HypothesisHandler};
+pub use handlers::{MetricComputeRequest, MetricComputeResponse, MetricHandler};
+pub use telemetry::TelemetryEmitter;
 
 /// Type alias for MetricAgent (for backward compatibility with CLI)
 pub type MetricAgent = ExperimentalMetricAgent;
@@ -150,7 +148,11 @@ pub fn get_agent_registrations() -> Vec<AgentRegistration> {
             version: HYPOTHESIS_AGENT_VERSION.to_string(),
             classification: "HYPOTHESIS_EVALUATION".to_string(),
             cli_command: "hypothesis".to_string(),
-            cli_subcommands: vec!["evaluate".to_string(), "inspect".to_string(), "validate".to_string()],
+            cli_subcommands: vec![
+                "evaluate".to_string(),
+                "inspect".to_string(),
+                "validate".to_string(),
+            ],
             endpoint_path: "/api/v1/agents/hypothesis".to_string(),
         },
         AgentRegistration {

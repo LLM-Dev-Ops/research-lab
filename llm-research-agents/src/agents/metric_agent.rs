@@ -52,6 +52,7 @@
 //! ```
 
 use async_trait::async_trait;
+use chrono::Utc;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde_json::json;
@@ -60,15 +61,12 @@ use thiserror::Error;
 use tracing::{debug, info, instrument, warn};
 use uuid::Uuid;
 use validator::Validate;
-use chrono::Utc;
 
-use crate::contracts::{
-    metrics::*,
-    decision_event::*,
-    common::*,
-};
-use super::traits::{Agent, ConfidenceEstimator, PerformanceBounded, PerformanceBudget, BudgetViolation};
 use super::telemetry::{AgentTelemetry, TelemetryEvent, TelemetryEventType};
+use super::traits::{
+    Agent, BudgetViolation, ConfidenceEstimator, PerformanceBounded, PerformanceBudget,
+};
+use crate::contracts::{common::*, decision_event::*, metrics::*};
 
 // =============================================================================
 // Agent Constants
@@ -88,34 +86,51 @@ pub const METRIC_AGENT_VERSION: &str = "1.0.0";
 #[derive(Debug, Error)]
 pub enum MetricAgentRuntimeError {
     #[error("Validation error: {0}")]
+    /// Represents the validation case.
     Validation(String),
 
     #[error("Empty data: no records provided for computation")]
+    /// Represents the empty data case.
     EmptyData,
 
     #[error("Computation error for metric '{metric}': {message}")]
-    Computation { metric: String, message: String },
+    /// Represents the computation case.
+    Computation {
+        #[doc = "The metric."]
+        metric: String,
+        #[doc = "The human-readable message."]
+        message: String,
+    },
 
     #[error("Missing required field: {0}")]
+    /// Represents the missing required case.
     MissingRequired(String),
 
     #[error("Type mismatch for field '{field}': expected {expected}, got {actual}")]
+    /// Represents the type mismatch case.
     TypeMismatch {
+        /// The field that failed validation.
         field: String,
+        /// The expected value or type.
         expected: String,
+        /// The observed value.
         actual: String,
     },
 
     #[error("Confidence calculation error: {0}")]
+    /// Represents the confidence error case.
     ConfidenceError(String),
 
     #[error("Serialization error: {0}")]
+    /// Represents the serialization case.
     Serialization(String),
 
     #[error("Internal error: {0}")]
+    /// Represents the internal case.
     Internal(String),
 
     #[error("Performance budget exceeded: {0}")]
+    /// Represents the budget exceeded case.
     BudgetExceeded(String),
 }
 
@@ -228,7 +243,9 @@ impl ExperimentalMetricAgent {
                 id: METRIC_AGENT_ID.to_string(),
                 version: METRIC_AGENT_VERSION.to_string(),
                 classification: AgentClassification::ExperimentalMetrics,
-                description: "Computes experimental metrics for hypothesis evaluation and research outcomes".to_string(),
+                description:
+                    "Computes experimental metrics for hypothesis evaluation and research outcomes"
+                        .to_string(),
             },
             config,
             telemetry: AgentTelemetry::new(METRIC_AGENT_ID.to_string()),
@@ -252,7 +269,10 @@ impl ExperimentalMetricAgent {
         if values.is_empty() {
             return Err(MetricAgentRuntimeError::Computation {
                 metric: request.name.clone(),
-                message: format!("No valid numeric values for variable '{}'", request.variable),
+                message: format!(
+                    "No valid numeric values for variable '{}'",
+                    request.variable
+                ),
             });
         }
 
@@ -264,10 +284,24 @@ impl ExperimentalMetricAgent {
             MetricType::CentralTendency => self.compute_central_tendency(&values, config)?,
             MetricType::Dispersion => self.compute_dispersion(&values, config)?,
             MetricType::DistributionShape => self.compute_distribution_shape(&values, config)?,
-            MetricType::Percentile => self.compute_percentile(&values, request.params.as_ref(), config)?,
-            MetricType::Correlation => self.compute_correlation(records, &request.variable, request.params.as_ref(), config)?,
-            MetricType::Regression => self.compute_regression(records, &request.variable, request.params.as_ref(), config)?,
-            MetricType::CustomAggregation => self.compute_custom_aggregation(&values, request.params.as_ref(), config)?,
+            MetricType::Percentile => {
+                self.compute_percentile(&values, request.params.as_ref(), config)?
+            }
+            MetricType::Correlation => self.compute_correlation(
+                records,
+                &request.variable,
+                request.params.as_ref(),
+                config,
+            )?,
+            MetricType::Regression => self.compute_regression(
+                records,
+                &request.variable,
+                request.params.as_ref(),
+                config,
+            )?,
+            MetricType::CustomAggregation => {
+                self.compute_custom_aggregation(&values, request.params.as_ref(), config)?
+            }
         };
 
         // Round to configured precision
@@ -312,7 +346,11 @@ impl ExperimentalMetricAgent {
     }
 
     /// Get nested value from JSON using dot notation (e.g., "metrics.accuracy").
-    fn get_nested_value<'a>(&self, record: &'a serde_json::Value, path: &str) -> Option<&'a serde_json::Value> {
+    fn get_nested_value<'a>(
+        &self,
+        record: &'a serde_json::Value,
+        path: &str,
+    ) -> Option<&'a serde_json::Value> {
         let parts: Vec<&str> = path.split('.').collect();
         let mut current = record;
 
@@ -335,7 +373,7 @@ impl ExperimentalMetricAgent {
         let ci = if config.include_ci && values.len() >= 3 {
             let variance = values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
             let std_error = (variance / n).sqrt();
-            
+
             // t-critical for 95% CI with n-1 df (approximation for large n)
             let t_critical = if n > 30.0 { 1.96 } else { 2.0 + 2.0 / n };
             let margin = t_critical * std_error;
@@ -351,8 +389,8 @@ impl ExperimentalMetricAgent {
             None
         };
 
-        let decimal_mean = Decimal::try_from(mean)
-            .map_err(|e| MetricAgentRuntimeError::Computation {
+        let decimal_mean =
+            Decimal::try_from(mean).map_err(|e| MetricAgentRuntimeError::Computation {
                 metric: "central_tendency".to_string(),
                 message: e.to_string(),
             })?;
@@ -371,8 +409,8 @@ impl ExperimentalMetricAgent {
         let variance = values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
         let std_dev = variance.sqrt();
 
-        let decimal_std = Decimal::try_from(std_dev)
-            .map_err(|e| MetricAgentRuntimeError::Computation {
+        let decimal_std =
+            Decimal::try_from(std_dev).map_err(|e| MetricAgentRuntimeError::Computation {
                 metric: "dispersion".to_string(),
                 message: e.to_string(),
             })?;
@@ -396,11 +434,15 @@ impl ExperimentalMetricAgent {
         }
 
         // Compute skewness
-        let m3 = values.iter().map(|x| ((x - mean) / std_dev).powi(3)).sum::<f64>() / n;
+        let m3 = values
+            .iter()
+            .map(|x| ((x - mean) / std_dev).powi(3))
+            .sum::<f64>()
+            / n;
         let skewness = m3 * (n * (n - 1.0)).sqrt() / (n - 2.0);
 
-        let decimal_skew = Decimal::try_from(skewness)
-            .map_err(|e| MetricAgentRuntimeError::Computation {
+        let decimal_skew =
+            Decimal::try_from(skewness).map_err(|e| MetricAgentRuntimeError::Computation {
                 metric: "distribution_shape".to_string(),
                 message: e.to_string(),
             })?;
@@ -426,8 +468,8 @@ impl ExperimentalMetricAgent {
         let idx = ((percentile / 100.0) * (sorted.len() - 1) as f64).round() as usize;
         let value = sorted.get(idx).copied().unwrap_or(0.0);
 
-        let decimal_value = Decimal::try_from(value)
-            .map_err(|e| MetricAgentRuntimeError::Computation {
+        let decimal_value =
+            Decimal::try_from(value).map_err(|e| MetricAgentRuntimeError::Computation {
                 metric: "percentile".to_string(),
                 message: e.to_string(),
             })?;
@@ -446,16 +488,20 @@ impl ExperimentalMetricAgent {
         let variable_y = params
             .and_then(|p| p.get("variable_y"))
             .and_then(|v| v.as_str())
-            .ok_or_else(|| MetricAgentRuntimeError::MissingRequired(
-                "params.variable_y required for correlation".to_string()
-            ))?;
+            .ok_or_else(|| {
+                MetricAgentRuntimeError::MissingRequired(
+                    "params.variable_y required for correlation".to_string(),
+                )
+            })?;
 
         // Extract paired values
         let mut pairs: Vec<(f64, f64)> = Vec::new();
         for record in records {
             if let (Some(x), Some(y)) = (
-                self.get_nested_value(record, variable_x).and_then(|v| v.as_f64()),
-                self.get_nested_value(record, variable_y).and_then(|v| v.as_f64()),
+                self.get_nested_value(record, variable_x)
+                    .and_then(|v| v.as_f64()),
+                self.get_nested_value(record, variable_y)
+                    .and_then(|v| v.as_f64()),
             ) {
                 if x.is_finite() && y.is_finite() {
                     pairs.push((x, y));
@@ -474,9 +520,15 @@ impl ExperimentalMetricAgent {
         let mean_x = pairs.iter().map(|(x, _)| x).sum::<f64>() / n;
         let mean_y = pairs.iter().map(|(_, y)| y).sum::<f64>() / n;
 
-        let cov = pairs.iter().map(|(x, y)| (x - mean_x) * (y - mean_y)).sum::<f64>() / (n - 1.0);
-        let std_x = (pairs.iter().map(|(x, _)| (x - mean_x).powi(2)).sum::<f64>() / (n - 1.0)).sqrt();
-        let std_y = (pairs.iter().map(|(_, y)| (y - mean_y).powi(2)).sum::<f64>() / (n - 1.0)).sqrt();
+        let cov = pairs
+            .iter()
+            .map(|(x, y)| (x - mean_x) * (y - mean_y))
+            .sum::<f64>()
+            / (n - 1.0);
+        let std_x =
+            (pairs.iter().map(|(x, _)| (x - mean_x).powi(2)).sum::<f64>() / (n - 1.0)).sqrt();
+        let std_y =
+            (pairs.iter().map(|(_, y)| (y - mean_y).powi(2)).sum::<f64>() / (n - 1.0)).sqrt();
 
         let r = if std_x > 0.0 && std_y > 0.0 {
             cov / (std_x * std_y)
@@ -484,11 +536,12 @@ impl ExperimentalMetricAgent {
             0.0
         };
 
-        let decimal_r = Decimal::try_from(r.clamp(-1.0, 1.0))
-            .map_err(|e| MetricAgentRuntimeError::Computation {
+        let decimal_r = Decimal::try_from(r.clamp(-1.0, 1.0)).map_err(|e| {
+            MetricAgentRuntimeError::Computation {
                 metric: "correlation".to_string(),
                 message: e.to_string(),
-            })?;
+            }
+        })?;
 
         Ok((decimal_r, None))
     }
@@ -504,16 +557,20 @@ impl ExperimentalMetricAgent {
         let variable_y = params
             .and_then(|p| p.get("variable_y"))
             .and_then(|v| v.as_str())
-            .ok_or_else(|| MetricAgentRuntimeError::MissingRequired(
-                "params.variable_y required for regression".to_string()
-            ))?;
+            .ok_or_else(|| {
+                MetricAgentRuntimeError::MissingRequired(
+                    "params.variable_y required for regression".to_string(),
+                )
+            })?;
 
         // Extract paired values
         let mut pairs: Vec<(f64, f64)> = Vec::new();
         for record in records {
             if let (Some(x), Some(y)) = (
-                self.get_nested_value(record, variable_x).and_then(|v| v.as_f64()),
-                self.get_nested_value(record, variable_y).and_then(|v| v.as_f64()),
+                self.get_nested_value(record, variable_x)
+                    .and_then(|v| v.as_f64()),
+                self.get_nested_value(record, variable_y)
+                    .and_then(|v| v.as_f64()),
             ) {
                 if x.is_finite() && y.is_finite() {
                     pairs.push((x, y));
@@ -532,7 +589,10 @@ impl ExperimentalMetricAgent {
         let mean_x = pairs.iter().map(|(x, _)| x).sum::<f64>() / n;
         let mean_y = pairs.iter().map(|(_, y)| y).sum::<f64>() / n;
 
-        let numerator = pairs.iter().map(|(x, y)| (x - mean_x) * (y - mean_y)).sum::<f64>();
+        let numerator = pairs
+            .iter()
+            .map(|(x, y)| (x - mean_x) * (y - mean_y))
+            .sum::<f64>();
         let denominator = pairs.iter().map(|(x, _)| (x - mean_x).powi(2)).sum::<f64>();
 
         let slope = if denominator > 0.0 {
@@ -541,8 +601,8 @@ impl ExperimentalMetricAgent {
             0.0
         };
 
-        let decimal_slope = Decimal::try_from(slope)
-            .map_err(|e| MetricAgentRuntimeError::Computation {
+        let decimal_slope =
+            Decimal::try_from(slope).map_err(|e| MetricAgentRuntimeError::Computation {
                 metric: "regression".to_string(),
                 message: e.to_string(),
             })?;
@@ -575,8 +635,8 @@ impl ExperimentalMetricAgent {
             _ => values.iter().sum::<f64>(),
         };
 
-        let decimal_value = Decimal::try_from(value)
-            .map_err(|e| MetricAgentRuntimeError::Computation {
+        let decimal_value =
+            Decimal::try_from(value).map_err(|e| MetricAgentRuntimeError::Computation {
                 metric: "custom_aggregation".to_string(),
                 message: e.to_string(),
             })?;
@@ -625,9 +685,7 @@ impl ExperimentalMetricAgent {
                 "Independent observations assumed".to_string(),
             ],
             limitations: warnings.to_vec(),
-            data_filters: vec![
-                format!("handle_missing: {:?}", input.config.handle_missing),
-            ],
+            data_filters: vec![format!("handle_missing: {:?}", input.config.handle_missing)],
         }
     }
 }
@@ -640,9 +698,10 @@ impl Default for ExperimentalMetricAgent {
 
 impl ConfidenceEstimator for ExperimentalMetricAgent {
     fn estimate_confidence(&self, sample_size: u64, _effect_size: Option<f64>) -> f64 {
-        // Base confidence from sample size
-        let size_confidence = (sample_size as f64 / 1000.0).min(0.9);
-        size_confidence.max(0.1)
+        // Preserve a non-zero floor while increasing smoothly with sample size.
+        // The previous max-based formula flattened every sample size <= 100 at
+        // 0.1, violating the estimator's monotonicity contract.
+        0.1 + 0.8 * (sample_size as f64 / 1000.0).min(1.0)
     }
 }
 
@@ -674,16 +733,17 @@ impl Agent for ExperimentalMetricAgent {
         // Check for requested metrics
         if input.metrics_requested.is_empty() {
             return Err(MetricAgentRuntimeError::MissingRequired(
-                "metrics_requested".to_string()
+                "metrics_requested".to_string(),
             ));
         }
 
         // Check max records limit
         if input.data.records.len() > self.config.max_records {
-            return Err(MetricAgentRuntimeError::Validation(
-                format!("Record count {} exceeds maximum {}", 
-                    input.data.records.len(), self.config.max_records)
-            ));
+            return Err(MetricAgentRuntimeError::Validation(format!(
+                "Record count {} exceeds maximum {}",
+                input.data.records.len(),
+                self.config.max_records
+            )));
         }
 
         Ok(())
@@ -810,7 +870,8 @@ impl Agent for ExperimentalMetricAgent {
 
         // Compute overall confidence
         let total_sample_size: u64 = output.metrics.iter().map(|m| m.sample_size).sum();
-        let computation_confidence = self.compute_overall_confidence(&output.metrics, total_sample_size);
+        let computation_confidence =
+            self.compute_overall_confidence(&output.metrics, total_sample_size);
 
         let confidence = Confidence {
             value: computation_confidence.value,
@@ -994,7 +1055,7 @@ mod tests {
 
         let output = agent.execute(input).await.unwrap();
         assert_eq!(output.metrics.len(), 1);
-        
+
         // Since our test data has a positive relationship, correlation should be positive
         let corr: f64 = output.metrics[0].value.try_into().unwrap();
         assert!(corr > 0.0);
@@ -1009,7 +1070,9 @@ mod tests {
             json!({"metrics": {"accuracy": 0.95}}),
         ];
 
-        let values = agent.extract_numeric_values(&records, "metrics.accuracy").unwrap();
+        let values = agent
+            .extract_numeric_values(&records, "metrics.accuracy")
+            .unwrap();
         assert_eq!(values.len(), 3);
         assert!((values[0] - 0.9).abs() < 0.001);
     }

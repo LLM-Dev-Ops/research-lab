@@ -12,7 +12,7 @@
     "build": "echo 'Cloud Function: no build step required'",
     "build:rust": "cargo build --workspace",
     "test": "cargo test --workspace",
-    "test:cf": "node -e \"const h = require('./index.js'); console.log('handler exported:', typeof h.handler === 'function')\"",
+    "test:cf": "node --test test/*.test.js",
     "lint": "cargo clippy --workspace",
     "fmt": "cargo fmt --all",
     "deploy": "gcloud functions deploy research-lab-agents --runtime nodejs20 --trigger-http --region us-central1 --project agentics-dev --entry-point handler --memory 512MB --timeout 120s --no-allow-unauthenticated"

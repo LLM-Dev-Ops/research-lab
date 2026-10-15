@@ -70,8 +70,11 @@ pub struct TelemetryEvent {
 /// Serializable trace context.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableTraceContext {
+    /// The distributed trace identifier.
     pub trace_id: String,
+    /// The current span identifier.
     pub span_id: String,
+    /// The optional parent span identifier.
     pub parent_span_id: Option<String>,
 }
 
@@ -135,7 +138,8 @@ impl TelemetryEmitter {
             timestamp: Utc::now(),
             agent_id: decision_event.agent_id.clone(),
             agent_version: decision_event.agent_version.clone(),
-            request_id: decision_event.metadata
+            request_id: decision_event
+                .metadata
                 .as_ref()
                 .and_then(|m| m.get("request_id"))
                 .and_then(|v| v.as_str())

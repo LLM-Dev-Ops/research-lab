@@ -45,12 +45,10 @@ use tracing::{debug, info, instrument, warn};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::contracts::{
-    hypothesis::*,
-    decision_event::*,
-    common::*,
+use super::traits::{
+    Agent, BudgetViolation, ConfidenceEstimator, PerformanceBounded, PerformanceBudget,
 };
-use super::traits::{Agent, ConfidenceEstimator, PerformanceBounded, PerformanceBudget, BudgetViolation};
+use crate::contracts::{common::*, decision_event::*, hypothesis::*};
 
 /// Agent version (semantic versioning).
 pub const HYPOTHESIS_AGENT_VERSION: &str = "1.0.0";
@@ -58,25 +56,38 @@ pub const HYPOTHESIS_AGENT_VERSION: &str = "1.0.0";
 /// Agent identifier.
 pub const HYPOTHESIS_AGENT_ID: &str = "hypothesis-agent-v1";
 
+type GroupedSamples = Option<(Vec<f64>, Vec<f64>)>;
+
 /// Errors from Hypothesis Agent operations.
 #[derive(Debug, Error)]
 pub enum HypothesisAgentError {
     #[error("Validation error: {0}")]
+    /// Represents the validation case.
     Validation(String),
 
     #[error("Insufficient sample size: required {required}, got {actual}")]
-    InsufficientSampleSize { required: u64, actual: u64 },
+    /// Represents the insufficient sample size case.
+    InsufficientSampleSize {
+        #[doc = "The required minimum value."]
+        required: u64,
+        #[doc = "The observed value."]
+        actual: u64,
+    },
 
     #[error("Statistical computation error: {0}")]
+    /// Represents the statistical computation case.
     StatisticalComputation(String),
 
     #[error("Configuration error: {0}")]
+    /// Represents the configuration case.
     Configuration(String),
 
     #[error("Internal error: {0}")]
+    /// Represents the internal case.
     Internal(String),
 
     #[error("Performance budget exceeded: {0}")]
+    /// Represents the budget exceeded case.
     BudgetExceeded(String),
 }
 
@@ -152,7 +163,10 @@ impl HypothesisAgent {
     }
 
     /// Create a new Hypothesis Agent with custom configuration and budget.
-    pub fn with_config_and_budget(config: HypothesisAgentConfig, budget: PerformanceBudget) -> Self {
+    pub fn with_config_and_budget(
+        config: HypothesisAgentConfig,
+        budget: PerformanceBudget,
+    ) -> Self {
         Self {
             identity: AgentIdentity {
                 id: HYPOTHESIS_AGENT_ID.to_string(),
@@ -216,11 +230,12 @@ impl HypothesisAgent {
     fn extract_samples(
         hypothesis: &HypothesisDefinition,
         data: &ExperimentalData,
-    ) -> (Vec<f64>, Option<(Vec<f64>, Vec<f64>)>) {
+    ) -> (Vec<f64>, GroupedSamples) {
         let var_name = Self::dependent_variable_name(hypothesis);
 
         let mut flat: Vec<f64> = Vec::with_capacity(data.observations.len());
-        let mut grouped: std::collections::BTreeMap<String, Vec<f64>> = std::collections::BTreeMap::new();
+        let mut grouped: std::collections::BTreeMap<String, Vec<f64>> =
+            std::collections::BTreeMap::new();
 
         for obs in &data.observations {
             if let Some(value) = Self::extract_observation_value(obs, &var_name) {
@@ -281,10 +296,7 @@ impl HypothesisAgent {
             });
         }
 
-        let alpha: f64 = hypothesis
-            .significance_level
-            .try_into()
-            .unwrap_or(0.05);
+        let alpha: f64 = hypothesis.significance_level.try_into().unwrap_or(0.05);
 
         if let Some((a, b)) = two_sample {
             return Ok(self.two_sample_ttest(&a, &b, alpha, config));
@@ -295,7 +307,11 @@ impl HypothesisAgent {
         let mean: f64 = values.iter().sum::<f64>() / n;
         let variance: f64 = values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
         let std_dev = variance.sqrt();
-        let std_error = if std_dev == 0.0 { 1e-12 } else { std_dev / n.sqrt() };
+        let std_error = if std_dev == 0.0 {
+            1e-12
+        } else {
+            std_dev / n.sqrt()
+        };
 
         let t_statistic = mean / std_error;
         let df = n - 1.0;
@@ -356,9 +372,13 @@ impl HypothesisAgent {
 
         // Welch–Satterthwaite df
         let df_num = se_sq.powi(2);
-        let df_den = (var_a / na).powi(2) / (na - 1.0).max(1.0)
-            + (var_b / nb).powi(2) / (nb - 1.0).max(1.0);
-        let df = if df_den <= 0.0 { na + nb - 2.0 } else { df_num / df_den };
+        let df_den =
+            (var_a / na).powi(2) / (na - 1.0).max(1.0) + (var_b / nb).powi(2) / (nb - 1.0).max(1.0);
+        let df = if df_den <= 0.0 {
+            na + nb - 2.0
+        } else {
+            df_num / df_den
+        };
 
         let p_value = self.approximate_t_pvalue(t_statistic.abs(), df);
         let null_rejected = p_value < alpha;
@@ -422,10 +442,7 @@ impl HypothesisAgent {
             });
         }
 
-        let alpha: f64 = hypothesis
-            .significance_level
-            .try_into()
-            .unwrap_or(0.05);
+        let alpha: f64 = hypothesis.significance_level.try_into().unwrap_or(0.05);
 
         // Mann-Whitney U needs two groups. Without groups, degrade to a
         // two-sample t-test across a median split to still return real output.
@@ -530,7 +547,8 @@ impl HypothesisAgent {
             let (mean_b, var_b) = mean_and_variance(&b);
             let na = a.len() as f64;
             let nb = b.len() as f64;
-            let pooled = (((na - 1.0) * var_a + (nb - 1.0) * var_b) / (na + nb - 2.0).max(1.0)).sqrt();
+            let pooled =
+                (((na - 1.0) * var_a + (nb - 1.0) * var_b) / (na + nb - 2.0).max(1.0)).sqrt();
             if pooled == 0.0 {
                 return None;
             }
@@ -636,9 +654,7 @@ impl ConfidenceEstimator for HypothesisAgent {
         let size_confidence = (sample_size as f64 / 1000.0).min(0.9);
 
         // Adjust based on effect size if available
-        let effect_adjustment = effect_size
-            .map(|e| (e.abs() * 0.1).min(0.1))
-            .unwrap_or(0.0);
+        let effect_adjustment = effect_size.map(|e| (e.abs() * 0.1).min(0.1)).unwrap_or(0.0);
 
         (size_confidence + effect_adjustment).min(0.99)
     }
@@ -699,13 +715,18 @@ impl Agent for HypothesisAgent {
             StatisticalTest::TTest | StatisticalTest::WelchTTest => {
                 self.evaluate_ttest(&input.hypothesis, &input.experimental_data, &input.config)?
             }
-            StatisticalTest::MannWhitneyU => {
-                self.evaluate_mann_whitney(&input.hypothesis, &input.experimental_data, &input.config)?
-            }
+            StatisticalTest::MannWhitneyU => self.evaluate_mann_whitney(
+                &input.hypothesis,
+                &input.experimental_data,
+                &input.config,
+            )?,
             _ => {
                 // For other tests, run a t-test (one- or two-sample) rather
                 // than silently falling through with the wrong test path.
-                warn!("Test method {:?} not fully implemented, using t-test", input.config.test_method);
+                warn!(
+                    "Test method {:?} not fully implemented, using t-test",
+                    input.config.test_method
+                );
                 self.evaluate_ttest(&input.hypothesis, &input.experimental_data, &input.config)?
             }
         };
@@ -722,13 +743,15 @@ impl Agent for HypothesisAgent {
 
         // Compute achieved power (post-hoc)
         let sample_size = input.experimental_data.sample_size;
-        let effect_value: Option<f64> = effect_size.as_ref().map(|e| e.value.try_into().unwrap_or(0.0));
-        let achieved_power = Decimal::try_from(
-            self.estimate_confidence(sample_size, effect_value)
-        ).ok();
+        let effect_value: Option<f64> = effect_size
+            .as_ref()
+            .map(|e| e.value.try_into().unwrap_or(0.0));
+        let achieved_power =
+            Decimal::try_from(self.estimate_confidence(sample_size, effect_value)).ok();
 
         // Build recommendations
-        let recommendations = self.build_recommendations(&status, &test_results, &assumption_violations);
+        let recommendations =
+            self.build_recommendations(&status, &test_results, &assumption_violations);
 
         // Assess sample adequacy
         let sample_adequacy = if sample_size >= 100 {
@@ -790,7 +813,9 @@ impl Agent for HypothesisAgent {
 
         // Estimate confidence
         let sample_size = input.experimental_data.sample_size;
-        let effect_value: Option<f64> = output.effect_size.as_ref()
+        let effect_value: Option<f64> = output
+            .effect_size
+            .as_ref()
             .map(|e| e.value.try_into().unwrap_or(0.0));
         let confidence_value = self.estimate_confidence(sample_size, effect_value);
 
@@ -799,8 +824,16 @@ impl Agent for HypothesisAgent {
                 .map_err(|e| HypothesisAgentError::Internal(e.to_string()))?,
             method: ConfidenceMethod::Heuristic,
             sample_size: Some(sample_size),
-            ci_lower: output.test_results.confidence_interval.as_ref().map(|ci| ci.lower),
-            ci_upper: output.test_results.confidence_interval.as_ref().map(|ci| ci.upper),
+            ci_lower: output
+                .test_results
+                .confidence_interval
+                .as_ref()
+                .map(|ci| ci.lower),
+            ci_upper: output
+                .test_results
+                .confidence_interval
+                .as_ref()
+                .map(|ci| ci.upper),
         };
 
         // Build constraints
@@ -867,7 +900,8 @@ impl HypothesisAgent {
         // Status-based recommendations
         match status {
             HypothesisStatus::Inconclusive => {
-                recommendations.push("Address assumption violations before drawing conclusions".to_string());
+                recommendations
+                    .push("Address assumption violations before drawing conclusions".to_string());
             }
             HypothesisStatus::Accepted => {
                 let p_value: f64 = results.p_value.try_into().unwrap_or(1.0);
@@ -928,9 +962,19 @@ fn mann_whitney_u(a: &[f64], b: &[f64]) -> (f64, f64) {
         from_a: bool,
     }
     let mut combined: Vec<Entry> = Vec::with_capacity(na + nb);
-    combined.extend(a.iter().map(|&v| Entry { value: v, from_a: true }));
-    combined.extend(b.iter().map(|&v| Entry { value: v, from_a: false }));
-    combined.sort_by(|x, y| x.value.partial_cmp(&y.value).unwrap_or(std::cmp::Ordering::Equal));
+    combined.extend(a.iter().map(|&v| Entry {
+        value: v,
+        from_a: true,
+    }));
+    combined.extend(b.iter().map(|&v| Entry {
+        value: v,
+        from_a: false,
+    }));
+    combined.sort_by(|x, y| {
+        x.value
+            .partial_cmp(&y.value)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     let n_total = combined.len();
     let mut ranks = vec![0.0f64; n_total];
@@ -943,8 +987,8 @@ fn mann_whitney_u(a: &[f64], b: &[f64]) -> (f64, f64) {
         }
         let group_size = j - i;
         let avg_rank = ((i + 1) as f64 + j as f64) / 2.0;
-        for k in i..j {
-            ranks[k] = avg_rank;
+        for rank in &mut ranks[i..j] {
+            *rank = avg_rank;
         }
         if group_size > 1 {
             let t = group_size as f64;
@@ -981,7 +1025,11 @@ fn mann_whitney_u(a: &[f64], b: &[f64]) -> (f64, f64) {
         let sigma = var_u.sqrt();
         // Continuity correction
         let numerator = (u_stat - mean_u).abs() - 0.5;
-        let z = if numerator <= 0.0 { 0.0 } else { numerator / sigma };
+        let z = if numerator <= 0.0 {
+            0.0
+        } else {
+            numerator / sigma
+        };
         2.0 * (1.0 - normal_cdf(z))
     };
 
@@ -1085,14 +1133,14 @@ fn ln_gamma(x: f64) -> f64 {
     // Lanczos approximation
     let g = 7;
     let c = [
-        0.99999999999980993,
+        0.999_999_999_999_809_9,
         676.5203681218851,
         -1259.1392167224028,
-        771.32342877765313,
-        -176.61502916214059,
+        771.323_428_777_653_1,
+        -176.615_029_162_140_6,
         12.507343278686905,
         -0.13857109526572012,
-        9.9843695780195716e-6,
+        9.984_369_578_019_572e-6,
         1.5056327351493116e-7,
     ];
 
@@ -1101,8 +1149,8 @@ fn ln_gamma(x: f64) -> f64 {
     } else {
         let x = x - 1.0;
         let mut a = c[0];
-        for i in 1..g + 2 {
-            a += c[i] / (x + i as f64);
+        for (i, coefficient) in c.iter().enumerate().take(g + 2).skip(1) {
+            a += coefficient / (x + i as f64);
         }
         let t = x + g as f64 + 0.5;
         0.5 * (2.0 * std::f64::consts::PI).ln() + (t - 0.5) * t.ln() - t + a.ln()
@@ -1116,7 +1164,7 @@ fn inverse_normal_cdf(p: f64) -> f64 {
         -3.969683028665376e+01,
         2.209460984245205e+02,
         -2.759285104469687e+02,
-        1.383577518672690e+02,
+        1.383_577_518_672_69e2,
         -3.066479806614716e+01,
         2.506628277459239e+00,
     ];
@@ -1242,7 +1290,10 @@ mod tests {
         let input = create_test_input(10); // Below minimum
 
         let result = agent.execute(input).await;
-        assert!(matches!(result, Err(HypothesisAgentError::InsufficientSampleSize { .. })));
+        assert!(matches!(
+            result,
+            Err(HypothesisAgentError::InsufficientSampleSize { .. })
+        ));
     }
 
     #[tokio::test]
@@ -1250,7 +1301,7 @@ mod tests {
         let agent = HypothesisAgent::new();
         let input = create_test_input(100);
 
-        let (output, event) = agent.invoke(input).await.unwrap();
+        let (_output, event) = agent.invoke(input).await.unwrap();
 
         assert_eq!(event.agent_id, HYPOTHESIS_AGENT_ID);
         assert_eq!(event.agent_version, HYPOTHESIS_AGENT_VERSION);
@@ -1357,8 +1408,14 @@ mod tests {
         let p: f64 = output.test_results.p_value.try_into().unwrap();
         let t: f64 = output.test_results.test_statistic.try_into().unwrap();
         assert!(p.is_finite(), "p-value must be finite");
-        assert!(p >= 0.0 && p <= 1.0, "p-value must be in [0,1], got {p}");
-        assert!(t.abs() > 0.0, "two-sample statistic must reflect group difference");
+        assert!(
+            (0.0..=1.0).contains(&p),
+            "p-value must be in [0,1], got {p}"
+        );
+        assert!(
+            t.abs() > 0.0,
+            "two-sample statistic must reflect group difference"
+        );
     }
 
     #[tokio::test]
@@ -1370,7 +1427,7 @@ mod tests {
         let output = agent.execute(input).await.expect("should evaluate");
 
         let p: f64 = output.test_results.p_value.try_into().unwrap();
-        assert!(p.is_finite() && p >= 0.0 && p <= 1.0);
+        assert!(p.is_finite() && (0.0..=1.0).contains(&p));
     }
 
     #[tokio::test]
@@ -1399,6 +1456,9 @@ mod tests {
         let a: Vec<f64> = (0..30).map(|i| 0.88 + i as f64 * 0.0005).collect();
         let b: Vec<f64> = (0..30).map(|i| 0.83 + i as f64 * 0.0005).collect();
         let (_u, p) = mann_whitney_u(&a, &b);
-        assert!(p < 0.05, "non-overlapping samples should reject null, p={p}");
+        assert!(
+            p < 0.05,
+            "non-overlapping samples should reject null, p={p}"
+        );
     }
 }

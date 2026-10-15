@@ -18,29 +18,33 @@ pub struct Evaluation {
     pub created_at: DateTime<Utc>,
 }
 
+/// Inputs used to create a new evaluation record.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewEvaluation {
+    pub experiment_id: Uuid,
+    pub sample_id: Uuid,
+    pub input: String,
+    pub output: String,
+    pub expected_output: Option<String>,
+    pub latency_ms: i64,
+    pub token_count: i32,
+    pub cost: Option<Decimal>,
+    pub metrics: serde_json::Value,
+}
+
 impl Evaluation {
-    pub fn new(
-        experiment_id: Uuid,
-        sample_id: Uuid,
-        input: String,
-        output: String,
-        expected_output: Option<String>,
-        latency_ms: i64,
-        token_count: i32,
-        cost: Option<Decimal>,
-        metrics: serde_json::Value,
-    ) -> Self {
+    pub fn new(details: NewEvaluation) -> Self {
         Self {
             id: Uuid::new_v4(),
-            experiment_id,
-            sample_id,
-            input,
-            output,
-            expected_output,
-            latency_ms,
-            token_count,
-            cost,
-            metrics,
+            experiment_id: details.experiment_id,
+            sample_id: details.sample_id,
+            input: details.input,
+            output: details.output,
+            expected_output: details.expected_output,
+            latency_ms: details.latency_ms,
+            token_count: details.token_count,
+            cost: details.cost,
+            metrics: details.metrics,
             created_at: Utc::now(),
         }
     }

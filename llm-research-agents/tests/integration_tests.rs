@@ -19,19 +19,15 @@ use uuid::Uuid;
 use llm_research_agents::{
     agents::Agent,
     contracts::{
-        hypothesis::*,
         decision_event::*,
+        hypothesis::*,
         metrics::{
-            MetricsInput, MetricRequest, MetricType, MetricsData,
-            MetricsConfig, MissingValueStrategy,
+            MetricRequest, MetricType, MetricsConfig, MetricsData, MetricsInput,
+            MissingValueStrategy,
         },
     },
-    HypothesisAgent,
-    ExperimentalMetricAgent,
-    HYPOTHESIS_AGENT_ID,
-    HYPOTHESIS_AGENT_VERSION,
-    METRIC_AGENT_ID,
-    METRIC_AGENT_VERSION,
+    ExperimentalMetricAgent, HypothesisAgent, HYPOTHESIS_AGENT_ID, HYPOTHESIS_AGENT_VERSION,
+    METRIC_AGENT_ID, METRIC_AGENT_VERSION,
 };
 
 // ============================================================================
@@ -97,11 +93,13 @@ fn create_valid_hypothesis_input(sample_size: u64) -> HypothesisInput {
 /// Create a valid MetricsInput for testing.
 fn create_valid_metrics_input() -> MetricsInput {
     let records: Vec<serde_json::Value> = (0..100)
-        .map(|i| json!({
-            "metric_a": (i as f64) * 0.5,
-            "metric_b": (i as f64) * 0.25 + 10.0,
-            "group": if i % 2 == 0 { "A" } else { "B" },
-        }))
+        .map(|i| {
+            json!({
+                "metric_a": (i as f64) * 0.5,
+                "metric_b": (i as f64) * 0.25 + 10.0,
+                "group": if i % 2 == 0 { "A" } else { "B" },
+            })
+        })
         .collect();
 
     MetricsInput {
@@ -163,7 +161,9 @@ mod hypothesis_agent {
         let output = result.unwrap();
         assert!(matches!(
             output.status,
-            HypothesisStatus::Accepted | HypothesisStatus::Rejected | HypothesisStatus::Inconclusive
+            HypothesisStatus::Accepted
+                | HypothesisStatus::Rejected
+                | HypothesisStatus::Inconclusive
         ));
     }
 
@@ -181,7 +181,11 @@ mod hypothesis_agent {
         assert_eq!(event.agent_id, HYPOTHESIS_AGENT_ID);
         assert_eq!(event.agent_version, HYPOTHESIS_AGENT_VERSION);
         assert_eq!(event.decision_type, DecisionType::HypothesisEvaluation);
-        assert_eq!(event.inputs_hash.len(), 64, "inputs_hash should be SHA256 (64 hex chars)");
+        assert_eq!(
+            event.inputs_hash.len(),
+            64,
+            "inputs_hash should be SHA256 (64 hex chars)"
+        );
         assert!(!event.outputs.is_null(), "outputs should be populated");
         assert!(event.confidence.value >= dec!(0) && event.confidence.value <= dec!(1));
 
@@ -205,8 +209,6 @@ mod hypothesis_agent {
 
     #[tokio::test]
     async fn test_determinism() {
-        let agent = HypothesisAgent::new();
-
         // Create identical inputs with same seed
         let input1 = create_valid_hypothesis_input(100);
         let input2 = HypothesisInput {
@@ -283,7 +285,10 @@ mod experimental_metric_agent {
 
         assert!(result.is_ok(), "Execution should succeed with valid input");
         let output = result.unwrap();
-        assert!(!output.metrics.is_empty(), "Should produce computed metrics");
+        assert!(
+            !output.metrics.is_empty(),
+            "Should produce computed metrics"
+        );
     }
 
     #[tokio::test]
@@ -323,7 +328,10 @@ mod experimental_metric_agent {
         // Verify mean computation (values are 0, 0.5, 1.0, ... 49.5)
         // Mean should be around 24.75
         let mean: f64 = metric.value.try_into().unwrap();
-        assert!(mean > 20.0 && mean < 30.0, "Mean should be approximately 24.75");
+        assert!(
+            mean > 20.0 && mean < 30.0,
+            "Mean should be approximately 24.75"
+        );
     }
 
     #[tokio::test]
@@ -352,7 +360,11 @@ mod experimental_metric_agent {
 
         let result = agent.execute(input).await.unwrap();
 
-        assert_eq!(result.metrics.len(), 2, "Should compute all requested metrics");
+        assert_eq!(
+            result.metrics.len(),
+            2,
+            "Should compute all requested metrics"
+        );
     }
 
     #[tokio::test]
@@ -363,7 +375,7 @@ mod experimental_metric_agent {
         let result = agent.execute(input).await.unwrap();
 
         assert_eq!(result.metadata.records_processed, 100);
-        assert!(result.metadata.processing_time_ms >= 0);
+        assert!(result.metadata.computed_at <= Utc::now());
     }
 }
 
@@ -427,8 +439,14 @@ mod decision_event {
     #[test]
     fn test_decision_type_serialization() {
         let types = vec![
-            (DecisionType::HypothesisEvaluation, "\"hypothesis_evaluation\""),
-            (DecisionType::ExperimentalMetrics, "\"experimental_metrics\""),
+            (
+                DecisionType::HypothesisEvaluation,
+                "\"hypothesis_evaluation\"",
+            ),
+            (
+                DecisionType::ExperimentalMetrics,
+                "\"experimental_metrics\"",
+            ),
         ];
 
         for (dt, expected) in types {

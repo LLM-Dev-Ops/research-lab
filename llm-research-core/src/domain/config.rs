@@ -231,21 +231,11 @@ pub enum GpuType {
     Custom(String),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct GpuRequirements {
     pub gpu_type: Option<GpuType>,
     pub gpu_count: u32,
     pub gpu_memory_gb: Option<u32>,
-}
-
-impl Default for GpuRequirements {
-    fn default() -> Self {
-        Self {
-            gpu_type: None,
-            gpu_count: 0,
-            gpu_memory_gb: None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -315,7 +305,7 @@ impl Default for ReproducibilitySettings {
 
 // ===== Complete Experiment Configuration =====
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Validate)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Validate)]
 pub struct ExperimentConfig {
     pub model_configs: Vec<ModelConfig>,
     pub dataset_refs: Vec<DatasetRef>,
@@ -325,20 +315,6 @@ pub struct ExperimentConfig {
     pub reproducibility_settings: ReproducibilitySettings,
     #[serde(flatten)]
     pub metadata: HashMap<String, serde_json::Value>,
-}
-
-impl Default for ExperimentConfig {
-    fn default() -> Self {
-        Self {
-            model_configs: Vec::new(),
-            dataset_refs: Vec::new(),
-            metric_configs: Vec::new(),
-            parameters: ExperimentParameters::default(),
-            resource_requirements: ResourceRequirements::default(),
-            reproducibility_settings: ReproducibilitySettings::default(),
-            metadata: HashMap::new(),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -366,7 +342,7 @@ mod tests {
     fn test_parameter_value() {
         let string_val = ParameterValue::from("test".to_string());
         let int_val = ParameterValue::from(42i64);
-        let _float_val = ParameterValue::from(3.14f64);
+        let _float_val = ParameterValue::from(3.125f64);
         let _bool_val = ParameterValue::from(true);
 
         match string_val {

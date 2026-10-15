@@ -51,13 +51,17 @@ use crate::clients::{RuVectorClient, RuVectorPersistence};
 use crate::contracts::metrics::{MetricsInput, MetricsOutput};
 use crate::contracts::DecisionEvent;
 use crate::execution::{ExecutionArtifact, ExecutionContext, ExecutionSpan};
+use crate::handlers::hypothesis::TraceContext;
 use crate::telemetry::TelemetryEmitter;
 
 /// Trace context for distributed tracing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetricTraceContext {
+    /// The distributed trace identifier.
     pub trace_id: String,
+    /// The current span identifier.
     pub span_id: String,
+    /// The optional parent span identifier.
     pub parent_span_id: Option<String>,
 }
 
@@ -104,11 +108,17 @@ pub struct MetricComputeResponse {
 /// Summary of decision event (without full outputs).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DecisionEventSummary {
+    /// The unique identifier.
     pub id: Uuid,
+    /// The stable agent identifier.
     pub agent_id: String,
+    /// The agent implementation version.
     pub agent_version: String,
+    /// The classified decision type.
     pub decision_type: String,
+    /// The serialized confidence value.
     pub confidence: String,
+    /// The optional RuVector storage reference.
     pub storage_ref: Option<String>,
 }
 
@@ -162,6 +172,11 @@ impl MetricHandler {
     ) -> (MetricComputeResponse, ExecutionSpan) {
         let start_time = Instant::now();
         let request_id = request.input.request_id;
+        let telemetry_trace = request.trace_context.as_ref().map(|context| TraceContext {
+            trace_id: context.trace_id.clone(),
+            span_id: context.span_id.clone(),
+            parent_span_id: context.parent_span_id.clone(),
+        });
         let mut agent_span = ExecutionSpan::new_agent(repo_span_id, METRIC_AGENT_ID);
 
         info!("Handling metric computation request");
@@ -200,6 +215,10 @@ impl MetricHandler {
                 return (response, agent_span);
             }
         };
+
+        self.telemetry
+            .emit_success(&event, telemetry_trace.as_ref())
+            .await;
 
         // Persist decision event
         let storage_ref = self.persist_decision_event(&event).await;
@@ -309,9 +328,13 @@ impl Default for MetricHandler {
 /// Agent information response.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentInfo {
+    /// The unique identifier.
     pub id: String,
+    /// The version.
     pub version: String,
+    /// The agent classification.
     pub classification: String,
+    /// The HTTP endpoint exposed by the agent.
     pub endpoint: String,
 }
 
@@ -335,15 +358,13 @@ mod tests {
             input: MetricsInput {
                 request_id: Uuid::new_v4(),
                 context_id: "test-experiment".to_string(),
-                metrics_requested: vec![
-                    MetricRequest {
-                        name: "mean_accuracy".to_string(),
-                        metric_type: MetricType::CentralTendency,
-                        variable: "accuracy".to_string(),
-                        group_by: None,
-                        params: None,
-                    },
-                ],
+                metrics_requested: vec![MetricRequest {
+                    name: "mean_accuracy".to_string(),
+                    metric_type: MetricType::CentralTendency,
+                    variable: "accuracy".to_string(),
+                    group_by: None,
+                    params: None,
+                }],
                 data: MetricsData {
                     source: "test".to_string(),
                     records,
@@ -400,7 +421,10 @@ mod tests {
 
         assert!(!response.success);
         assert!(response.error.is_some());
-        assert_eq!(response.error_code, Some("METRIC_COMPUTATION_FAILED".to_string()));
+        assert_eq!(
+            response.error_code,
+            Some("METRIC_COMPUTATION_FAILED".to_string())
+        );
 
         // Verify agent span records failure
         assert_eq!(agent_span.status, crate::execution::SpanStatus::Failed);
