@@ -152,14 +152,18 @@ pub struct MetricsData {
 /// Schema definition for data.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DataSchema {
+    /// The ordered field definitions.
     pub fields: Vec<FieldDefinition>,
 }
 
 /// Field definition in schema.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldDefinition {
+    /// The field name.
     pub name: String,
+    /// The field data type.
     pub data_type: String,
+    /// Whether the field may be null.
     pub nullable: bool,
 }
 
@@ -183,10 +187,15 @@ pub struct MetricsConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum MissingValueStrategy {
+    /// Represents the skip case.
     Skip,
+    /// Represents the zero fill case.
     ZeroFill,
+    /// Represents the mean impute case.
     MeanImpute,
+    /// Represents the median impute case.
     MedianImpute,
+    /// Represents the fail case.
     Fail,
 }
 
@@ -231,8 +240,11 @@ pub struct ComputedMetric {
 /// Confidence interval for a metric.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetricConfidenceInterval {
+    /// The lower confidence-bound value.
     pub lower: Decimal,
+    /// The upper confidence-bound value.
     pub upper: Decimal,
+    /// The confidence level.
     pub level: Decimal,
 }
 
@@ -255,6 +267,7 @@ pub struct MetricsMetadata {
 
 /// Agent identity for the Experimental Metric Agent.
 pub const AGENT_ID: &str = "experimental-metric-agent";
+/// The current agent contract version.
 pub const AGENT_VERSION: &str = "1.0.0";
 
 /// Error codes for the Experimental Metric Agent.
@@ -494,8 +507,14 @@ mod tests {
     #[test]
     fn test_persistence_fields() {
         let persistence = MetricEventPersistence::default();
-        assert!(persistence.persisted_fields.contains(&"agent_id".to_string()));
-        assert!(persistence.persisted_fields.contains(&"decision_type".to_string()));
-        assert!(persistence.excluded_fields.contains(&"pii_fields".to_string()));
+        assert!(persistence
+            .persisted_fields
+            .contains(&"agent_id".to_string()));
+        assert!(persistence
+            .persisted_fields
+            .contains(&"decision_type".to_string()));
+        assert!(persistence
+            .excluded_fields
+            .contains(&"pii_fields".to_string()));
     }
 }

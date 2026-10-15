@@ -76,15 +76,13 @@ fn test_semantic_version_creation() {
 
 #[test]
 fn test_semantic_version_with_pre_release() {
-    let v = SemanticVersion::new(1, 0, 0)
-        .with_pre_release("alpha.1".to_string());
+    let v = SemanticVersion::new(1, 0, 0).with_pre_release("alpha.1".to_string());
     assert_eq!(v.pre_release, Some("alpha.1".to_string()));
 }
 
 #[test]
 fn test_semantic_version_with_build_metadata() {
-    let v = SemanticVersion::new(1, 0, 0)
-        .with_build_metadata("build.123".to_string());
+    let v = SemanticVersion::new(1, 0, 0).with_build_metadata("build.123".to_string());
     assert_eq!(v.build_metadata, Some("build.123".to_string()));
 }
 
@@ -128,8 +126,7 @@ fn test_semantic_version_comparison() {
 
     // Pre-release versions have lower precedence
     let v_release = SemanticVersion::new(1, 0, 0);
-    let v_pre = SemanticVersion::new(1, 0, 0)
-        .with_pre_release("alpha".to_string());
+    let v_pre = SemanticVersion::new(1, 0, 0).with_pre_release("alpha".to_string());
     assert!(v_pre < v_release);
 }
 
@@ -138,8 +135,7 @@ fn test_semantic_version_display() {
     let v1 = SemanticVersion::new(1, 2, 3);
     assert_eq!(v1.to_string(), "1.2.3");
 
-    let v2 = SemanticVersion::new(1, 0, 0)
-        .with_pre_release("beta.1".to_string());
+    let v2 = SemanticVersion::new(1, 0, 0).with_pre_release("beta.1".to_string());
     assert_eq!(v2.to_string(), "1.0.0-beta.1");
 
     let v3 = SemanticVersion::new(2, 1, 0)
@@ -153,8 +149,8 @@ fn test_semantic_version_display() {
 #[test]
 fn test_content_hash_computation() {
     let data = "hello world";
-    let hash1 = ContentHash::from_str(data);
-    let hash2 = ContentHash::from_str(data);
+    let hash1 = ContentHash::from_content(data);
+    let hash2 = ContentHash::from_content(data);
 
     assert_eq!(hash1, hash2);
     assert_eq!(hash1.as_str(), hash2.as_str());
@@ -162,8 +158,8 @@ fn test_content_hash_computation() {
 
 #[test]
 fn test_content_hash_different_data() {
-    let hash1 = ContentHash::from_str("hello");
-    let hash2 = ContentHash::from_str("world");
+    let hash1 = ContentHash::from_content("hello");
+    let hash2 = ContentHash::from_content("world");
 
     assert_ne!(hash1, hash2);
 }
@@ -172,14 +168,14 @@ fn test_content_hash_different_data() {
 fn test_content_hash_from_bytes() {
     let data = b"test data";
     let hash1 = ContentHash::from_bytes(data);
-    let hash2 = ContentHash::from_str("test data");
+    let hash2 = ContentHash::from_content("test data");
 
     assert_eq!(hash1, hash2);
 }
 
 #[test]
 fn test_content_hash_display() {
-    let hash = ContentHash::from_str("test");
+    let hash = ContentHash::from_content("test");
     let display = format!("{}", hash);
     assert_eq!(display, hash.as_str());
     assert!(!display.is_empty());
@@ -307,13 +303,7 @@ fn test_experiment_state_transitions() {
     let owner_id = UserId::new();
     let config = ExperimentConfig::default();
 
-    let mut experiment = Experiment::new(
-        "Test".to_string(),
-        None,
-        None,
-        owner_id,
-        config,
-    );
+    let mut experiment = Experiment::new("Test".to_string(), None, None, owner_id, config);
 
     // Activate
     assert!(experiment.activate().is_ok());
@@ -342,13 +332,7 @@ fn test_experiment_invalid_transitions() {
     let owner_id = UserId::new();
     let config = ExperimentConfig::default();
 
-    let mut experiment = Experiment::new(
-        "Test".to_string(),
-        None,
-        None,
-        owner_id,
-        config,
-    );
+    let mut experiment = Experiment::new("Test".to_string(), None, None, owner_id, config);
 
     // Cannot pause from Draft
     assert!(experiment.pause().is_err());
@@ -367,13 +351,7 @@ fn test_experiment_collaborators() {
     let collab2 = UserId::new();
     let config = ExperimentConfig::default();
 
-    let mut experiment = Experiment::new(
-        "Test".to_string(),
-        None,
-        None,
-        owner_id,
-        config,
-    );
+    let mut experiment = Experiment::new("Test".to_string(), None, None, owner_id, config);
 
     experiment.add_collaborator(collab1);
     experiment.add_collaborator(collab2);
@@ -402,13 +380,7 @@ fn test_experiment_tags() {
     let owner_id = UserId::new();
     let config = ExperimentConfig::default();
 
-    let mut experiment = Experiment::new(
-        "Test".to_string(),
-        None,
-        None,
-        owner_id,
-        config,
-    );
+    let mut experiment = Experiment::new("Test".to_string(), None, None, owner_id, config);
 
     experiment.add_tag("ml".to_string());
     experiment.add_tag("nlp".to_string());
@@ -429,12 +401,7 @@ fn test_experiment_run_creation() {
     let experiment_id = ExperimentId::new();
     let user_id = UserId::new();
 
-    let run = ExperimentRun::new(
-        experiment_id,
-        1,
-        "Run 1".to_string(),
-        user_id,
-    );
+    let run = ExperimentRun::new(experiment_id, 1, "Run 1".to_string(), user_id);
 
     assert_eq!(run.experiment_id, experiment_id);
     assert_eq!(run.run_number, 1);
@@ -451,12 +418,7 @@ fn test_experiment_run_lifecycle() {
     let experiment_id = ExperimentId::new();
     let user_id = UserId::new();
 
-    let mut run = ExperimentRun::new(
-        experiment_id,
-        1,
-        "Test Run".to_string(),
-        user_id,
-    );
+    let mut run = ExperimentRun::new(experiment_id, 1, "Test Run".to_string(), user_id);
 
     // Queue
     run.queue();
@@ -481,12 +443,7 @@ fn test_experiment_run_failure() {
     let experiment_id = ExperimentId::new();
     let user_id = UserId::new();
 
-    let mut run = ExperimentRun::new(
-        experiment_id,
-        1,
-        "Test Run".to_string(),
-        user_id,
-    );
+    let mut run = ExperimentRun::new(experiment_id, 1, "Test Run".to_string(), user_id);
 
     run.start();
 
@@ -511,12 +468,7 @@ fn test_experiment_run_cancel() {
     let experiment_id = ExperimentId::new();
     let user_id = UserId::new();
 
-    let mut run = ExperimentRun::new(
-        experiment_id,
-        1,
-        "Test Run".to_string(),
-        user_id,
-    );
+    let mut run = ExperimentRun::new(experiment_id, 1, "Test Run".to_string(), user_id);
 
     run.start();
     run.cancel();
@@ -530,12 +482,7 @@ fn test_experiment_run_timeout() {
     let experiment_id = ExperimentId::new();
     let user_id = UserId::new();
 
-    let mut run = ExperimentRun::new(
-        experiment_id,
-        1,
-        "Test Run".to_string(),
-        user_id,
-    );
+    let mut run = ExperimentRun::new(experiment_id, 1, "Test Run".to_string(), user_id);
 
     run.start();
     run.timeout();
@@ -549,12 +496,7 @@ fn test_experiment_run_duration() {
     let experiment_id = ExperimentId::new();
     let user_id = UserId::new();
 
-    let mut run = ExperimentRun::new(
-        experiment_id,
-        1,
-        "Test Run".to_string(),
-        user_id,
-    );
+    let mut run = ExperimentRun::new(experiment_id, 1, "Test Run".to_string(), user_id);
 
     assert!(run.duration_seconds().is_none());
 
@@ -579,12 +521,8 @@ fn test_experiment_run_with_parameters() {
     params.insert("batch_size".to_string(), ParameterValue::from(32i64));
     params.insert("enabled".to_string(), ParameterValue::from(true));
 
-    let run = ExperimentRun::new(
-        experiment_id,
-        1,
-        "Test Run".to_string(),
-        user_id,
-    ).with_parameters(params);
+    let run = ExperimentRun::new(experiment_id, 1, "Test Run".to_string(), user_id)
+        .with_parameters(params);
 
     assert_eq!(run.parameters.len(), 3);
 }
@@ -595,12 +533,8 @@ fn test_experiment_run_with_parent() {
     let user_id = UserId::new();
     let parent_id = RunId::new();
 
-    let run = ExperimentRun::new(
-        experiment_id,
-        2,
-        "Child Run".to_string(),
-        user_id,
-    ).with_parent(parent_id);
+    let run = ExperimentRun::new(experiment_id, 2, "Child Run".to_string(), user_id)
+        .with_parent(parent_id);
 
     assert_eq!(run.parent_run_id, Some(parent_id));
 }

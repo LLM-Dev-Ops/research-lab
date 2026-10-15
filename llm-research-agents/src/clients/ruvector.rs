@@ -71,10 +71,12 @@ impl RuVectorConfig {
     /// - RUVECTOR_TIMEOUT_SECS: Request timeout (default: 30)
     pub fn from_env() -> Result<Self, RuVectorError> {
         // REQUIRED env vars - FAIL if missing (Phase 7 Layer 2 hardening)
-        let base_url = std::env::var("RUVECTOR_SERVICE_URL")
-            .map_err(|_| RuVectorError::Configuration(
-                "RUVECTOR_SERVICE_URL environment variable is required. ABORTING STARTUP.".to_string()
-            ))?;
+        let base_url = std::env::var("RUVECTOR_SERVICE_URL").map_err(|_| {
+            RuVectorError::Configuration(
+                "RUVECTOR_SERVICE_URL environment variable is required. ABORTING STARTUP."
+                    .to_string(),
+            )
+        })?;
 
         let auth_token = std::env::var("RUVECTOR_API_KEY")
             .map_err(|_| RuVectorError::Configuration(
@@ -107,28 +109,46 @@ impl RuVectorConfig {
 #[derive(Debug, Error)]
 pub enum RuVectorError {
     #[error("Configuration error: {0}")]
+    /// Represents the configuration case.
     Configuration(String),
 
     #[error("Connection error: {0}")]
+    /// Represents the connection case.
     Connection(String),
 
     #[error("Request error: {0}")]
+    /// Represents the request case.
     Request(String),
 
     #[error("Response error: status={status}, message={message}")]
-    Response { status: u16, message: String },
+    /// Represents the response case.
+    Response {
+        #[doc = "The HTTP response status code."]
+        status: u16,
+        #[doc = "The human-readable message."]
+        message: String,
+    },
 
     #[error("Serialization error: {0}")]
+    /// Represents the serialization case.
     Serialization(String),
 
     #[error("Authentication error: {0}")]
+    /// Represents the authentication case.
     Authentication(String),
 
     #[error("Timeout error")]
+    /// Represents the timeout case.
     Timeout,
 
     #[error("Retry exhausted after {attempts} attempts: {last_error}")]
-    RetryExhausted { attempts: u32, last_error: String },
+    /// Represents the retry exhausted case.
+    RetryExhausted {
+        #[doc = "The number of attempts made."]
+        attempts: u32,
+        #[doc = "The error returned by the final attempt."]
+        last_error: String,
+    },
 }
 
 impl From<reqwest::Error> for RuVectorError {
@@ -168,8 +188,11 @@ pub struct RuVectorResponse<T> {
 /// Error response from ruvector-service.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RuVectorErrorResponse {
+    /// The machine-readable error code.
     pub code: String,
+    /// The human-readable error message.
     pub message: String,
+    /// Optional structured error details.
     pub details: Option<serde_json::Value>,
 }
 
@@ -193,7 +216,10 @@ pub trait RuVectorPersistence: Send + Sync {
     ///
     /// This is the primary persistence method for all LLM-Research-Lab agents.
     /// Every agent invocation MUST call this exactly once.
-    async fn persist_decision_event(&self, event: DecisionEvent) -> Result<PersistedDecisionEvent, RuVectorError>;
+    async fn persist_decision_event(
+        &self,
+        event: DecisionEvent,
+    ) -> Result<PersistedDecisionEvent, RuVectorError>;
 
     /// Retrieve a DecisionEvent by ID.
     async fn get_decision_event(&self, id: Uuid) -> Result<Option<DecisionEvent>, RuVectorError>;
@@ -255,7 +281,7 @@ impl RuVectorClient {
         let healthy = client.health_check().await?;
         if !healthy {
             return Err(RuVectorError::Connection(
-                "Ruvector health check failed - service unavailable. ABORTING STARTUP.".to_string()
+                "Ruvector health check failed - service unavailable. ABORTING STARTUP.".to_string(),
             ));
         }
 
@@ -349,10 +375,16 @@ impl RuVectorClient {
                 }
                 Err(e) => {
                     if e.is_timeout() {
-                        warn!("Request timeout, attempt {}/{}", attempts, self.config.max_retries);
+                        warn!(
+                            "Request timeout, attempt {}/{}",
+                            attempts, self.config.max_retries
+                        );
                         last_error = "Timeout".to_string();
                     } else if e.is_connect() {
-                        warn!("Connection error, attempt {}/{}", attempts, self.config.max_retries);
+                        warn!(
+                            "Connection error, attempt {}/{}",
+                            attempts, self.config.max_retries
+                        );
                         last_error = e.to_string();
                     } else {
                         return Err(e.into());
@@ -362,7 +394,8 @@ impl RuVectorClient {
 
             // Exponential backoff
             if attempts < self.config.max_retries {
-                let backoff = Duration::from_millis(self.config.retry_backoff_ms * 2u64.pow(attempts - 1));
+                let backoff =
+                    Duration::from_millis(self.config.retry_backoff_ms * 2u64.pow(attempts - 1));
                 tokio::time::sleep(backoff).await;
             }
         }
@@ -377,7 +410,10 @@ impl RuVectorClient {
 #[async_trait]
 impl RuVectorPersistence for RuVectorClient {
     #[instrument(skip(self, event), fields(event_id = %event.id, agent_id = %event.agent_id))]
-    async fn persist_decision_event(&self, event: DecisionEvent) -> Result<PersistedDecisionEvent, RuVectorError> {
+    async fn persist_decision_event(
+        &self,
+        event: DecisionEvent,
+    ) -> Result<PersistedDecisionEvent, RuVectorError> {
         let url = self.build_url("/api/v1/decision-events")?;
 
         info!("Persisting DecisionEvent to ruvector-service");
@@ -389,11 +425,9 @@ impl RuVectorPersistence for RuVectorClient {
             .await?;
 
         if response.success {
-            let persisted = response.data.ok_or_else(|| {
-                RuVectorError::Response {
-                    status: 200,
-                    message: "Success response without data".to_string(),
-                }
+            let persisted = response.data.ok_or_else(|| RuVectorError::Response {
+                status: 200,
+                message: "Success response without data".to_string(),
             })?;
 
             info!(
@@ -460,20 +494,19 @@ impl RuVectorPersistence for RuVectorClient {
     async fn health_check(&self) -> Result<bool, RuVectorError> {
         let url = self.build_url("/health")?;
 
-        let response = self.client.get(url).send().await
-            .map_err(|e| {
-                error!(
-                    error = %e,
-                    ruvector_url = %self.config.base_url,
-                    phase = "phase7",
-                    layer = "layer2",
-                    "Ruvector health check connection failed - FATAL"
-                );
-                RuVectorError::Connection(format!(
-                    "Health check failed - cannot connect to Ruvector at {}: {}",
-                    self.config.base_url, e
-                ))
-            })?;
+        let response = self.client.get(url).send().await.map_err(|e| {
+            error!(
+                error = %e,
+                ruvector_url = %self.config.base_url,
+                phase = "phase7",
+                layer = "layer2",
+                "Ruvector health check connection failed - FATAL"
+            );
+            RuVectorError::Connection(format!(
+                "Health check failed - cannot connect to Ruvector at {}: {}",
+                self.config.base_url, e
+            ))
+        })?;
 
         if !response.status().is_success() {
             let status = response.status();

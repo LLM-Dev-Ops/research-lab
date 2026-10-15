@@ -21,7 +21,7 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 use validator::Validate;
 
@@ -109,9 +109,7 @@ impl Confidence {
         }
         if let (Some(lo), Some(hi)) = (self.ci_lower, self.ci_upper) {
             if lo > hi {
-                return Err(format!(
-                    "ci_lower ({lo}) must be ≤ ci_upper ({hi})"
-                ));
+                return Err(format!("ci_lower ({lo}) must be ≤ ci_upper ({hi})"));
             }
         }
         Ok(())
@@ -160,7 +158,9 @@ pub struct ConstraintsApplied {
 /// Temporal bounds for experimental constraints.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemporalBounds {
+    /// The optional start of the time range.
     pub start: Option<DateTime<Utc>>,
+    /// The optional end of the time range.
     pub end: Option<DateTime<Utc>>,
 }
 
@@ -270,36 +270,43 @@ pub struct EvidenceRefsBuilder {
 }
 
 impl EvidenceRefsBuilder {
+    /// Sets the pub for this builder.
     pub fn run_id(mut self, id: impl Into<String>) -> Self {
         self.run_ids.push(id.into());
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn run_ids(mut self, ids: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.run_ids.extend(ids.into_iter().map(Into::into));
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn telemetry_id(mut self, id: impl Into<String>) -> Self {
         self.telemetry_ids.push(id.into());
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn telemetry_ids(mut self, ids: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.telemetry_ids.extend(ids.into_iter().map(Into::into));
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn dataset_ref(mut self, ref_: impl Into<String>) -> Self {
         self.dataset_refs.push(ref_.into());
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn dataset_refs(mut self, refs: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.dataset_refs.extend(refs.into_iter().map(Into::into));
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn build(self) -> EvidenceRefs {
         EvidenceRefs {
             run_ids: self.run_ids,
@@ -414,46 +421,55 @@ pub struct DecisionEventBuilder {
 }
 
 impl DecisionEventBuilder {
+    /// Sets the pub for this builder.
     pub fn agent_id(mut self, id: impl Into<String>) -> Self {
         self.agent_id = Some(id.into());
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn agent_version(mut self, version: impl Into<String>) -> Self {
         self.agent_version = Some(version.into());
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn decision_type(mut self, dt: DecisionType) -> Self {
         self.decision_type = Some(dt);
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn inputs_hash(mut self, hash: impl Into<String>) -> Self {
         self.inputs_hash = Some(hash.into());
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn outputs(mut self, outputs: serde_json::Value) -> Self {
         self.outputs = Some(outputs);
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn confidence(mut self, confidence: Confidence) -> Self {
         self.confidence = Some(confidence);
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn constraints_applied(mut self, constraints: ConstraintsApplied) -> Self {
         self.constraints_applied = Some(constraints);
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn execution_ref(mut self, exec_ref: ExecutionRef) -> Self {
         self.execution_ref = Some(exec_ref);
         self
     }
 
+    /// Sets the pub for this builder.
     pub fn metadata(mut self, metadata: serde_json::Value) -> Self {
         self.metadata = Some(metadata);
         self
@@ -486,12 +502,24 @@ impl DecisionEventBuilder {
     /// - `phase7_identity`: Defaults from environment variables if not provided
     /// - `evidence_refs`: Defaults to empty references if not provided
     pub fn build(self) -> Result<DecisionEvent, DecisionEventBuildError> {
-        let agent_id = self.agent_id.ok_or(DecisionEventBuildError::MissingField("agent_id"))?;
-        let agent_version = self.agent_version.ok_or(DecisionEventBuildError::MissingField("agent_version"))?;
-        let decision_type = self.decision_type.ok_or(DecisionEventBuildError::MissingField("decision_type"))?;
-        let inputs_hash = self.inputs_hash.ok_or(DecisionEventBuildError::MissingField("inputs_hash"))?;
-        let outputs = self.outputs.ok_or(DecisionEventBuildError::MissingField("outputs"))?;
-        let confidence = self.confidence.ok_or(DecisionEventBuildError::MissingField("confidence"))?;
+        let agent_id = self
+            .agent_id
+            .ok_or(DecisionEventBuildError::MissingField("agent_id"))?;
+        let agent_version = self
+            .agent_version
+            .ok_or(DecisionEventBuildError::MissingField("agent_version"))?;
+        let decision_type = self
+            .decision_type
+            .ok_or(DecisionEventBuildError::MissingField("decision_type"))?;
+        let inputs_hash = self
+            .inputs_hash
+            .ok_or(DecisionEventBuildError::MissingField("inputs_hash"))?;
+        let outputs = self
+            .outputs
+            .ok_or(DecisionEventBuildError::MissingField("outputs"))?;
+        let confidence = self
+            .confidence
+            .ok_or(DecisionEventBuildError::MissingField("confidence"))?;
 
         let execution_ref = self.execution_ref.unwrap_or_else(|| ExecutionRef {
             execution_id: Uuid::new_v4(),
@@ -529,6 +557,7 @@ impl DecisionEventBuilder {
 #[derive(Debug, thiserror::Error)]
 pub enum DecisionEventBuildError {
     #[error("Missing required field: {0}")]
+    /// Represents the missing field case.
     MissingField(&'static str),
 }
 
@@ -575,11 +604,7 @@ mod tests {
             ci_upper: None,
         };
 
-        let phase7_identity = Phase7Identity::new(
-            "simulation-runner",
-            "simulation",
-            "2.0.0",
-        );
+        let phase7_identity = Phase7Identity::new("simulation-runner", "simulation", "2.0.0");
 
         let evidence_refs = EvidenceRefs::builder()
             .run_id("run-abc-123")
@@ -634,11 +659,23 @@ mod tests {
     fn test_phase7_signal_types_serialization() {
         let signal_types = vec![
             (DecisionType::HypothesisSignal, "\"hypothesis_signal\""),
-            (DecisionType::SimulationOutcomeSignal, "\"simulation_outcome_signal\""),
-            (DecisionType::ScenarioComparisonSignal, "\"scenario_comparison_signal\""),
-            (DecisionType::ConfidenceDeltaSignal, "\"confidence_delta_signal\""),
+            (
+                DecisionType::SimulationOutcomeSignal,
+                "\"simulation_outcome_signal\"",
+            ),
+            (
+                DecisionType::ScenarioComparisonSignal,
+                "\"scenario_comparison_signal\"",
+            ),
+            (
+                DecisionType::ConfidenceDeltaSignal,
+                "\"confidence_delta_signal\"",
+            ),
             (DecisionType::UncertaintySignal, "\"uncertainty_signal\""),
-            (DecisionType::ResearchInsightSignal, "\"research_insight_signal\""),
+            (
+                DecisionType::ResearchInsightSignal,
+                "\"research_insight_signal\"",
+            ),
         ];
 
         for (dt, expected) in signal_types {

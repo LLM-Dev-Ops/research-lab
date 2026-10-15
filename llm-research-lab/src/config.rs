@@ -30,16 +30,12 @@ use std::env;
 /// Platform environment.
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum PlatformEnv {
+    #[default]
     Dev,
     Staging,
     Prod,
-}
-
-impl Default for PlatformEnv {
-    fn default() -> Self {
-        Self::Dev
-    }
 }
 
 /// Cloud Run service configuration.
@@ -161,11 +157,13 @@ impl AgentIdentity {
     /// FAILS FAST if required identity variables are missing or invalid.
     /// NO FALLBACKS in production mode.
     pub fn load(platform_env: &PlatformEnv) -> Result<Self> {
-        let name = env::var("AGENT_NAME")
-            .map_err(|_| anyhow!("AGENT_NAME environment variable is required. ABORTING STARTUP."))?;
+        let name = env::var("AGENT_NAME").map_err(|_| {
+            anyhow!("AGENT_NAME environment variable is required. ABORTING STARTUP.")
+        })?;
 
-        let domain = env::var("AGENT_DOMAIN")
-            .map_err(|_| anyhow!("AGENT_DOMAIN environment variable is required. ABORTING STARTUP."))?;
+        let domain = env::var("AGENT_DOMAIN").map_err(|_| {
+            anyhow!("AGENT_DOMAIN environment variable is required. ABORTING STARTUP.")
+        })?;
 
         let phase = env::var("AGENT_PHASE")
             .map_err(|_| anyhow!("AGENT_PHASE environment variable is required (must be 'phase7'). ABORTING STARTUP."))?;
@@ -173,8 +171,9 @@ impl AgentIdentity {
         let layer = env::var("AGENT_LAYER")
             .map_err(|_| anyhow!("AGENT_LAYER environment variable is required (must be 'layer2'). ABORTING STARTUP."))?;
 
-        let version = env::var("AGENT_VERSION")
-            .map_err(|_| anyhow!("AGENT_VERSION environment variable is required. ABORTING STARTUP."))?;
+        let version = env::var("AGENT_VERSION").map_err(|_| {
+            anyhow!("AGENT_VERSION environment variable is required. ABORTING STARTUP.")
+        })?;
 
         // Validate phase and layer in production/staging
         if *platform_env != PlatformEnv::Dev {
@@ -222,7 +221,8 @@ impl AgentIdentity {
                 domain: env::var("AGENT_DOMAIN").unwrap_or_else(|_| "research".to_string()),
                 phase: env::var("AGENT_PHASE").unwrap_or_else(|_| "phase7".to_string()),
                 layer: env::var("AGENT_LAYER").unwrap_or_else(|_| "layer2".to_string()),
-                version: env::var("AGENT_VERSION").unwrap_or_else(|_| env!("CARGO_PKG_VERSION").to_string()),
+                version: env::var("AGENT_VERSION")
+                    .unwrap_or_else(|_| env!("CARGO_PKG_VERSION").to_string()),
             })
         } else {
             Self::load(platform_env)
@@ -266,8 +266,7 @@ impl Config {
                     if platform_env == PlatformEnv::Prod { "prod" } else { "staging" }
                 ))?
         } else {
-            env::var("RUVECTOR_SERVICE_URL")
-                .unwrap_or_else(|_| "http://localhost:8081".to_string())
+            env::var("RUVECTOR_SERVICE_URL").unwrap_or_else(|_| "http://localhost:8081".to_string())
         };
 
         // RUVECTOR_API_KEY - REQUIRED in prod, optional in dev
@@ -331,12 +330,10 @@ impl Config {
                 .unwrap_or(3),
             llm_observatory_endpoint,
             telemetry_endpoint,
-            service_name: env::var("SERVICE_NAME")
-                .unwrap_or_else(|_| default_service_name()),
+            service_name: env::var("SERVICE_NAME").unwrap_or_else(|_| default_service_name()),
             service_version: env::var("SERVICE_VERSION")
                 .unwrap_or_else(|_| default_service_version()),
-            log_level: env::var("LLM_RESEARCH_LOG_LEVEL")
-                .unwrap_or_else(|_| default_log_level()),
+            log_level: env::var("LLM_RESEARCH_LOG_LEVEL").unwrap_or_else(|_| default_log_level()),
             telemetry_stdout: env::var("TELEMETRY_STDOUT")
                 .unwrap_or_else(|_| "true".to_string())
                 .parse()

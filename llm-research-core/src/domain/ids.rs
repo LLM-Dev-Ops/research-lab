@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::fmt;
 use uuid::Uuid;
-use sha2::{Sha256, Digest};
 
 /// Newtype pattern for ExperimentId
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -404,8 +404,8 @@ impl ContentHash {
         Self(hex::encode(result))
     }
 
-    /// Create a new content hash from a string
-    pub fn from_str(data: &str) -> Self {
+    /// Create a new content hash from string content.
+    pub fn from_content(data: &str) -> Self {
         Self::from_bytes(data.as_bytes())
     }
 
@@ -490,11 +490,14 @@ impl SemanticVersion {
             return Err(format!("Invalid version format: {}", s));
         }
 
-        let major = parts[0].parse::<u32>()
+        let major = parts[0]
+            .parse::<u32>()
             .map_err(|_| format!("Invalid major version: {}", parts[0]))?;
-        let minor = parts[1].parse::<u32>()
+        let minor = parts[1]
+            .parse::<u32>()
             .map_err(|_| format!("Invalid minor version: {}", parts[1]))?;
-        let patch = parts[2].parse::<u32>()
+        let patch = parts[2]
+            .parse::<u32>()
             .map_err(|_| format!("Invalid patch version: {}", parts[2]))?;
 
         Ok(Self {
@@ -566,8 +569,7 @@ mod tests {
         let v = SemanticVersion::new(1, 2, 3);
         assert_eq!(v.to_string(), "1.2.3");
 
-        let v = SemanticVersion::new(1, 2, 3)
-            .with_pre_release("alpha.1".to_string());
+        let v = SemanticVersion::new(1, 2, 3).with_pre_release("alpha.1".to_string());
         assert_eq!(v.to_string(), "1.2.3-alpha.1");
 
         let v = SemanticVersion::new(1, 2, 3)
@@ -595,9 +597,9 @@ mod tests {
 
     #[test]
     fn test_content_hash() {
-        let hash1 = ContentHash::from_str("hello world");
-        let hash2 = ContentHash::from_str("hello world");
-        let hash3 = ContentHash::from_str("hello world!");
+        let hash1 = ContentHash::from_content("hello world");
+        let hash2 = ContentHash::from_content("hello world");
+        let hash3 = ContentHash::from_content("hello world!");
 
         assert_eq!(hash1, hash2);
         assert_ne!(hash1, hash3);

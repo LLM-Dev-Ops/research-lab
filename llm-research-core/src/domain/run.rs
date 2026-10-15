@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use validator::Validate;
 
-use super::ids::{ArtifactId, ExperimentId, RunId, UserId};
 use super::config::ParameterValue;
+use super::ids::{ArtifactId, ExperimentId, RunId, UserId};
 
 // ===== Run Status =====
 
@@ -24,10 +24,7 @@ impl RunStatus {
     pub fn is_terminal(&self) -> bool {
         matches!(
             self,
-            RunStatus::Completed
-                | RunStatus::Failed
-                | RunStatus::Cancelled
-                | RunStatus::TimedOut
+            RunStatus::Completed | RunStatus::Failed | RunStatus::Cancelled | RunStatus::TimedOut
         )
     }
 
@@ -73,7 +70,7 @@ pub struct RuntimeInfo {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DependencyManifest {
     pub manifest_type: String, // e.g., "pip", "conda", "cargo", "npm"
-    pub content: String,        // requirements.txt, environment.yml, Cargo.lock, etc.
+    pub content: String,       // requirements.txt, environment.yml, Cargo.lock, etc.
     pub checksum: Option<String>,
 }
 
@@ -147,23 +144,12 @@ pub struct ConfusionMatrix {
     pub timestamp: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct RunMetrics {
     pub scalars: Vec<ScalarMetricSeries>,
     pub distributions: Vec<DistributionMetric>,
     pub confusion_matrices: Vec<ConfusionMatrix>,
     pub custom_metrics: HashMap<String, serde_json::Value>,
-}
-
-impl Default for RunMetrics {
-    fn default() -> Self {
-        Self {
-            scalars: Vec::new(),
-            distributions: Vec::new(),
-            confusion_matrices: Vec::new(),
-            custom_metrics: HashMap::new(),
-        }
-    }
 }
 
 // ===== Artifact Reference =====
@@ -203,25 +189,13 @@ pub struct LogHighlight {
     pub source: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct LogSummary {
     pub total_lines: u64,
     pub error_count: u64,
     pub warning_count: u64,
     pub highlights: Vec<LogHighlight>,
     pub log_artifact_id: Option<ArtifactId>,
-}
-
-impl Default for LogSummary {
-    fn default() -> Self {
-        Self {
-            total_lines: 0,
-            error_count: 0,
-            warning_count: 0,
-            highlights: Vec::new(),
-            log_artifact_id: None,
-        }
-    }
 }
 
 // ===== Run Error =====
@@ -389,12 +363,7 @@ mod tests {
     fn test_run_lifecycle() {
         let experiment_id = ExperimentId::new();
         let user_id = UserId::new();
-        let mut run = ExperimentRun::new(
-            experiment_id,
-            1,
-            "Test Run".to_string(),
-            user_id,
-        );
+        let mut run = ExperimentRun::new(experiment_id, 1, "Test Run".to_string(), user_id);
 
         assert_eq!(run.status, RunStatus::Pending);
         assert!(!run.is_terminal());
@@ -423,15 +392,10 @@ mod tests {
         let mut params = HashMap::new();
         params.insert("learning_rate".to_string(), ParameterValue::from(0.001f64));
 
-        let run = ExperimentRun::new(
-            experiment_id,
-            1,
-            "Test Run".to_string(),
-            user_id,
-        )
-        .with_parameters(params.clone())
-        .with_parent(parent_id)
-        .with_tags(vec!["test".to_string(), "experiment".to_string()]);
+        let run = ExperimentRun::new(experiment_id, 1, "Test Run".to_string(), user_id)
+            .with_parameters(params.clone())
+            .with_parent(parent_id)
+            .with_tags(vec!["test".to_string(), "experiment".to_string()]);
 
         assert_eq!(run.parameters.len(), 1);
         assert_eq!(run.parent_run_id, Some(parent_id));
@@ -442,12 +406,7 @@ mod tests {
     fn test_run_duration() {
         let experiment_id = ExperimentId::new();
         let user_id = UserId::new();
-        let mut run = ExperimentRun::new(
-            experiment_id,
-            1,
-            "Test Run".to_string(),
-            user_id,
-        );
+        let mut run = ExperimentRun::new(experiment_id, 1, "Test Run".to_string(), user_id);
 
         assert!(run.duration_seconds().is_none());
 

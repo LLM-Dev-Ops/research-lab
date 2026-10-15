@@ -264,13 +264,7 @@ fn test_dataset_sample_without_expected_output() {
     let input = json!({"prompt": "Generate a story about..."});
     let metadata = json!({});
 
-    let sample = DatasetSample::new(
-        dataset_id,
-        0,
-        input.clone(),
-        None,
-        metadata.clone(),
-    );
+    let sample = DatasetSample::new(dataset_id, 0, input.clone(), None, metadata.clone());
 
     assert_eq!(sample.expected_output, None);
     assert_eq!(sample.input, input);
@@ -338,28 +332,16 @@ fn test_prompt_template_creation() {
 #[test]
 fn test_prompt_template_validation() {
     // Valid
-    let valid = PromptTemplate::new(
-        "Test".to_string(),
-        None,
-        "Template {{var}}".to_string(),
-    );
+    let valid = PromptTemplate::new("Test".to_string(), None, "Template {{var}}".to_string());
     assert!(valid.validate().is_ok());
 
     // Invalid: empty name
-    let mut invalid = PromptTemplate::new(
-        "".to_string(),
-        None,
-        "Template".to_string(),
-    );
+    let mut invalid = PromptTemplate::new("".to_string(), None, "Template".to_string());
     invalid.name = "".to_string();
     assert!(invalid.validate().is_err());
 
     // Invalid: empty template
-    let mut invalid = PromptTemplate::new(
-        "Test".to_string(),
-        None,
-        "Template".to_string(),
-    );
+    let mut invalid = PromptTemplate::new("Test".to_string(), None, "Template".to_string());
     invalid.template = "".to_string();
     assert!(invalid.validate().is_err());
 }
@@ -367,11 +349,7 @@ fn test_prompt_template_validation() {
 #[test]
 fn test_prompt_template_variable_extraction() {
     let template = "{{var1}} and {{var2}} but not {var3} or {{var1}} again";
-    let prompt = PromptTemplate::new(
-        "Test".to_string(),
-        None,
-        template.to_string(),
-    );
+    let prompt = PromptTemplate::new("Test".to_string(), None, template.to_string());
 
     // Should extract var1 and var2, but may have duplicates
     assert!(prompt.variables.contains(&"var1".to_string()));
@@ -382,11 +360,7 @@ fn test_prompt_template_variable_extraction() {
 #[test]
 fn test_prompt_template_render_success() {
     let template = "Dear {{name}},\n\nYour order #{{order_id}} is ready.";
-    let prompt = PromptTemplate::new(
-        "Order Notification".to_string(),
-        None,
-        template.to_string(),
-    );
+    let prompt = PromptTemplate::new("Order Notification".to_string(), None, template.to_string());
 
     let context = json!({
         "name": "Alice",
@@ -403,11 +377,7 @@ fn test_prompt_template_render_success() {
 #[test]
 fn test_prompt_template_render_missing_variable() {
     let template = "Hello {{name}}!";
-    let prompt = PromptTemplate::new(
-        "Test".to_string(),
-        None,
-        template.to_string(),
-    );
+    let prompt = PromptTemplate::new("Test".to_string(), None, template.to_string());
 
     let context = json!({
         "wrong_key": "value"
@@ -421,11 +391,7 @@ fn test_prompt_template_render_missing_variable() {
 #[test]
 fn test_prompt_template_render_with_non_string_values() {
     let template = "Score: {{score}}, Passed: {{passed}}";
-    let prompt = PromptTemplate::new(
-        "Test".to_string(),
-        None,
-        template.to_string(),
-    );
+    let prompt = PromptTemplate::new("Test".to_string(), None, template.to_string());
 
     let context = json!({
         "score": 95,
@@ -442,11 +408,7 @@ fn test_prompt_template_render_with_non_string_values() {
 #[test]
 fn test_prompt_template_no_variables() {
     let template = "This is a static template with no variables.";
-    let prompt = PromptTemplate::new(
-        "Static".to_string(),
-        None,
-        template.to_string(),
-    );
+    let prompt = PromptTemplate::new("Static".to_string(), None, template.to_string());
 
     assert_eq!(prompt.variables.len(), 0);
 
@@ -507,17 +469,17 @@ fn test_evaluation_creation() {
         "recall": 0.97
     });
 
-    let eval = Evaluation::new(
+    let eval = Evaluation::new(NewEvaluation {
         experiment_id,
         sample_id,
-        "What is 2+2?".to_string(),
-        "4".to_string(),
-        Some("4".to_string()),
-        150,
-        10,
-        Some(rust_decimal::Decimal::new(15, 5)), // 0.00015
-        metrics.clone(),
-    );
+        input: "What is 2+2?".to_string(),
+        output: "4".to_string(),
+        expected_output: Some("4".to_string()),
+        latency_ms: 150,
+        token_count: 10,
+        cost: Some(rust_decimal::Decimal::new(15, 5)), // 0.00015
+        metrics: metrics.clone(),
+    });
 
     assert_eq!(eval.experiment_id, experiment_id);
     assert_eq!(eval.sample_id, sample_id);
@@ -535,17 +497,17 @@ fn test_evaluation_without_expected_output() {
     let experiment_id = Uuid::new_v4();
     let sample_id = Uuid::new_v4();
 
-    let eval = Evaluation::new(
+    let eval = Evaluation::new(NewEvaluation {
         experiment_id,
         sample_id,
-        "Generate a poem".to_string(),
-        "Roses are red...".to_string(),
-        None,
-        500,
-        50,
-        None,
-        json!({}),
-    );
+        input: "Generate a poem".to_string(),
+        output: "Roses are red...".to_string(),
+        expected_output: None,
+        latency_ms: 500,
+        token_count: 50,
+        cost: None,
+        metrics: json!({}),
+    });
 
     assert_eq!(eval.expected_output, None);
     assert_eq!(eval.cost, None);
@@ -556,17 +518,17 @@ fn test_evaluation_with_high_latency() {
     let experiment_id = Uuid::new_v4();
     let sample_id = Uuid::new_v4();
 
-    let eval = Evaluation::new(
+    let eval = Evaluation::new(NewEvaluation {
         experiment_id,
         sample_id,
-        "Complex task".to_string(),
-        "Result".to_string(),
-        None,
-        30_000, // 30 seconds
-        1000,
-        None,
-        json!({"latency_class": "slow"}),
-    );
+        input: "Complex task".to_string(),
+        output: "Result".to_string(),
+        expected_output: None,
+        latency_ms: 30_000, // 30 seconds
+        token_count: 1000,
+        cost: None,
+        metrics: json!({"latency_class": "slow"}),
+    });
 
     assert_eq!(eval.latency_ms, 30_000);
 }
@@ -576,7 +538,7 @@ fn test_evaluation_metrics() {
     let metrics = EvaluationMetrics {
         accuracy: Some(rust_decimal::Decimal::new(95, 2)), // 0.95
         precision: Some(rust_decimal::Decimal::new(93, 2)), // 0.93
-        recall: Some(rust_decimal::Decimal::new(97, 2)), // 0.97
+        recall: Some(rust_decimal::Decimal::new(97, 2)),   // 0.97
         f1_score: Some(rust_decimal::Decimal::new(95, 2)), // 0.95
         bleu_score: Some(rust_decimal::Decimal::new(82, 2)), // 0.82
         rouge_scores: Some(json!({
@@ -743,7 +705,7 @@ fn test_sample_config_custom() {
 fn test_parameter_value_conversions() {
     let string_val = ParameterValue::from("test".to_string());
     let int_val = ParameterValue::from(42i64);
-    let float_val = ParameterValue::from(3.14f64);
+    let float_val = ParameterValue::from(3.125f64);
     let bool_val = ParameterValue::from(true);
 
     match string_val {
@@ -757,7 +719,7 @@ fn test_parameter_value_conversions() {
     }
 
     match float_val {
-        ParameterValue::Float(f) => assert_eq!(f, 3.14),
+        ParameterValue::Float(f) => assert_eq!(f, 3.125),
         _ => panic!("Expected Float"),
     }
 
@@ -781,7 +743,10 @@ fn test_parameter_value_nested() {
     }
 
     let mut map = HashMap::new();
-    map.insert("key1".to_string(), ParameterValue::from("value1".to_string()));
+    map.insert(
+        "key1".to_string(),
+        ParameterValue::from("value1".to_string()),
+    );
     map.insert("key2".to_string(), ParameterValue::from(42i64));
 
     let object = ParameterValue::Object(map);
@@ -1014,7 +979,10 @@ fn test_metric_config_validation() {
 #[test]
 fn test_core_error_variants() {
     let validation_err = CoreError::Validation("Invalid input".to_string());
-    assert_eq!(validation_err.to_string(), "Validation error: Invalid input");
+    assert_eq!(
+        validation_err.to_string(),
+        "Validation error: Invalid input"
+    );
 
     let not_found_err = CoreError::NotFound("Resource not found".to_string());
     assert_eq!(not_found_err.to_string(), "Not found: Resource not found");
@@ -1046,7 +1014,7 @@ fn test_core_error_from_serde() {
     if let Err(e) = parse_result {
         let core_err: CoreError = e.into();
         match core_err {
-            CoreError::Serialization(_) => {},
+            CoreError::Serialization(_) => {}
             _ => panic!("Expected Serialization error"),
         }
     }

@@ -180,9 +180,13 @@ pub struct HypothesisVariable {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum VariableRole {
+    /// Represents the independent case.
     Independent,
+    /// Represents the dependent case.
     Dependent,
+    /// Represents the confounding case.
     Confounding,
+    /// Represents the control case.
     Control,
 }
 
@@ -190,10 +194,15 @@ pub enum VariableRole {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum VariableDataType {
+    /// Represents the continuous case.
     Continuous,
+    /// Represents the discrete case.
     Discrete,
+    /// Represents the categorical case.
     Categorical,
+    /// Represents the ordinal case.
     Ordinal,
+    /// Represents the binary case.
     Binary,
 }
 
@@ -282,9 +291,13 @@ pub struct EvaluationConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum CorrectionMethod {
+    /// Represents the bonferroni case.
     Bonferroni,
+    /// Represents the holm case.
     Holm,
+    /// Represents the benjamini hochberg case.
     BenjaminiHochberg,
+    /// Represents the benjamini yekutieli case.
     BenjaminiYekutieli,
 }
 
@@ -359,8 +372,11 @@ pub struct TestResults {
 /// Confidence interval.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConfidenceInterval {
+    /// The lower confidence-bound value.
     pub lower: Decimal,
+    /// The upper confidence-bound value.
     pub upper: Decimal,
+    /// The confidence level.
     pub level: Decimal,
 }
 
@@ -381,14 +397,23 @@ pub struct EffectSize {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum EffectSizeMeasure {
+    /// Represents the cohens d case.
     CohensD,
+    /// Represents the hedges g case.
     HedgesG,
+    /// Represents the glass delta case.
     GlassDelta,
+    /// Represents the eta squared case.
     EtaSquared,
+    /// Represents the omega squared case.
     OmegaSquared,
+    /// Represents the cramers v case.
     CramersV,
+    /// Represents the phi coefficient case.
     PhiCoefficient,
+    /// Represents the odds ratio case.
     OddsRatio,
+    /// Represents the risk ratio case.
     RiskRatio,
 }
 
@@ -412,9 +437,13 @@ pub struct DiagnosticInfo {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SampleAdequacy {
+    /// Represents the adequate case.
     Adequate,
+    /// Represents the marginal case.
     Marginal,
+    /// Represents the inadequate case.
     Inadequate,
+    /// Represents the unknown case.
     Unknown,
 }
 
@@ -438,8 +467,11 @@ pub struct AssumptionViolation {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ViolationSeverity {
+    /// Represents the minor case.
     Minor,
+    /// Represents the moderate case.
     Moderate,
+    /// Represents the severe case.
     Severe,
 }
 
@@ -494,7 +526,8 @@ mod tests {
         };
 
         let json = serde_json::to_string(&input).expect("Serialization failed");
-        let deserialized: HypothesisInput = serde_json::from_str(&json).expect("Deserialization failed");
+        let deserialized: HypothesisInput =
+            serde_json::from_str(&json).expect("Deserialization failed");
 
         assert_eq!(input.hypothesis.name, deserialized.hypothesis.name);
     }

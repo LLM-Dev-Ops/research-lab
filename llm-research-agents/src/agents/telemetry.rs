@@ -146,10 +146,15 @@ impl TelemetryEvent {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TelemetrySeverity {
+    /// Represents the debug case.
     Debug,
+    /// Represents the info case.
     Info,
+    /// Represents the warn case.
     Warn,
+    /// Represents the error case.
     Error,
+    /// Represents the critical case.
     Critical,
 }
 
@@ -277,14 +282,16 @@ impl AgentTelemetry {
             "agent_telemetry_events_total",
             "agent_id" => agent_id.clone(),
             "event_type" => event_type
-        ).increment(1);
+        )
+        .increment(1);
 
         // Emit duration metric if available
         if let Some(duration_ms) = event.metadata.get("duration_ms").and_then(|v| v.as_u64()) {
             metrics::histogram!(
                 "agent_execution_duration_ms",
                 "agent_id" => agent_id
-            ).record(duration_ms as f64);
+            )
+            .record(duration_ms as f64);
         }
     }
 
@@ -305,7 +312,12 @@ impl AgentTelemetry {
     }
 
     /// Emit execution completed telemetry.
-    pub fn execution_completed(&self, request_id: Uuid, duration_ms: u64, result_metadata: serde_json::Value) {
+    pub fn execution_completed(
+        &self,
+        request_id: Uuid,
+        duration_ms: u64,
+        result_metadata: serde_json::Value,
+    ) {
         self.emit(TelemetryEvent {
             event_type: TelemetryEventType::ExecutionCompleted,
             agent_id: self.agent_id.clone(),
@@ -427,9 +439,18 @@ mod tests {
 
     #[test]
     fn test_telemetry_event_type_display() {
-        assert_eq!(TelemetryEventType::ExecutionStarted.to_string(), "execution_started");
-        assert_eq!(TelemetryEventType::MetricComputed.to_string(), "metric_computed");
-        assert_eq!(TelemetryEventType::Custom("test".to_string()).to_string(), "custom_test");
+        assert_eq!(
+            TelemetryEventType::ExecutionStarted.to_string(),
+            "execution_started"
+        );
+        assert_eq!(
+            TelemetryEventType::MetricComputed.to_string(),
+            "metric_computed"
+        );
+        assert_eq!(
+            TelemetryEventType::Custom("test".to_string()).to_string(),
+            "custom_test"
+        );
     }
 
     #[test]

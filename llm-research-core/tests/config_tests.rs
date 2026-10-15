@@ -151,7 +151,7 @@ fn test_gpu_requirements_default() {
 
 #[test]
 fn test_gpu_type_variants() {
-    let types = vec![
+    let types = [
         GpuType::T4,
         GpuType::V100,
         GpuType::A100,
@@ -186,10 +186,10 @@ fn test_parameter_value_integer() {
 
 #[test]
 fn test_parameter_value_float() {
-    let value = ParameterValue::from(3.14f64);
+    let value = ParameterValue::from(3.125f64);
 
     match value {
-        ParameterValue::Float(f) => assert!((f - 3.14).abs() < 1e-10),
+        ParameterValue::Float(f) => assert!((f - 3.125).abs() < 1e-10),
         _ => panic!("Expected Float variant"),
     }
 }
@@ -222,7 +222,10 @@ fn test_parameter_value_array() {
 #[test]
 fn test_parameter_value_object() {
     let mut obj = HashMap::new();
-    obj.insert("key1".to_string(), ParameterValue::from("value1".to_string()));
+    obj.insert(
+        "key1".to_string(),
+        ParameterValue::from("value1".to_string()),
+    );
     obj.insert("key2".to_string(), ParameterValue::from(42i64));
 
     let value = ParameterValue::Object(obj);
@@ -265,7 +268,7 @@ fn test_dataset_ref_creation() {
 
 #[test]
 fn test_dataset_version_selector() {
-    let selectors = vec![
+    let selectors = [
         DatasetVersionSelector::Latest,
         DatasetVersionSelector::Tag("v1.0".to_string()),
         DatasetVersionSelector::Specific(DatasetVersionId::new()),
@@ -277,7 +280,7 @@ fn test_dataset_version_selector() {
 
 #[test]
 fn test_data_split_variants() {
-    let splits = vec![
+    let splits = [
         DataSplit::Train,
         DataSplit::Validation,
         DataSplit::Test,
@@ -299,7 +302,7 @@ fn test_sample_config_default() {
 
 #[test]
 fn test_sample_strategy_variants() {
-    let strategies = vec![
+    let strategies = [
         SampleStrategy::Random,
         SampleStrategy::Sequential,
         SampleStrategy::Stratified,
@@ -364,7 +367,7 @@ fn test_metric_config_with_threshold() {
 
 #[test]
 fn test_threshold_direction_variants() {
-    let directions = vec![
+    let directions = [
         ThresholdDirection::Above,
         ThresholdDirection::Below,
         ThresholdDirection::Equal,
@@ -419,7 +422,7 @@ fn test_search_space_creation() {
 
 #[test]
 fn test_search_strategy_variants() {
-    let strategies = vec![
+    let strategies = [
         SearchStrategy::Grid,
         SearchStrategy::Random,
         SearchStrategy::Bayesian,
