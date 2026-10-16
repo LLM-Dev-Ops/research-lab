@@ -70,6 +70,12 @@ The fixed `research-lab-runtime-recovery-v1` live evaluator passed 1/8 criteria
 on main and 8/8 on the candidate. All four frozen behavior anchors passed for
 both. Flywheel 0.1.12 promoted the implementation (+0.875) and verified all eight
 signed replay checks. See the adjacent `2026-10-16-runtime-blockers-flywheel.json`.
+The executable evaluator is committed as `scripts/evaluate-runtime.cjs`; it
+requires Python/PyYAML for workflow parsing. Set `RUFLO_CLI` to the pinned CLI
+file and `RUFLO_MODEL_DIR` to the verified cache root, then run
+`node scripts/evaluate-runtime.cjs /absolute/path/to/worktree` to reproduce the
+eight criteria and four anchors. The candidate evaluator executes the real
+offline hook, writing an auditable local task outcome.
 
 ## Rollback
 

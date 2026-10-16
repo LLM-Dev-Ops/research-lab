@@ -105,11 +105,11 @@
             ],
             "generation": 1
           },
-          "signature": "RLANcQKSJkHwUftDxVW9maumUnc5JrWeEPJwsJTEK0ap8UqARFBrfkDsfmUStk1JS65+jCOgOtPq+dlyu7JMBA==",
-          "publicKey": "MCowBQYDK2VwAyEA8I6vqcOk82pHlW4+ar7SO9AGRmRJzg9Ap7Ze/soz/A4=",
+          "signature": "GFa7Wnyw/TyQZnks1zNUQEl5VP+HASVFhVovDvnCmnLiGcZ0Kz1NAVYBsSVZA+U4W/AbZM0uhLXd4OSRGMoSBA==",
+          "publicKey": "MCowBQYDK2VwAyEAIflIgG86BM/Np+twNN44b/a+vuPQ6qvtNubmb7CPUkw=",
           "alg": "ed25519"
         },
-        "createdAt": "2026-10-16T14:50:01Z",
+        "createdAt": "2026-10-16T14:53:30.500Z",
         "baselineScore": {
           "primary": 0.125,
           "noopRate": 0.875,
@@ -157,11 +157,11 @@
             "kind": "root",
             "root": "root"
           },
-          "signature": "k3/OxAt4SodAmfijlmkYr6ShUwQyuwhwvZRPdvJKe3ljbwf1GSkIXPUHCw1mFPyornuWT5jgB7WlJ/XbAbNQCg==",
-          "publicKey": "MCowBQYDK2VwAyEA8I6vqcOk82pHlW4+ar7SO9AGRmRJzg9Ap7Ze/soz/A4=",
+          "signature": "O43rd55VrUSEddTEFYIl0g+KmmSI60ebIkWdw/RIhKf8kpGSI0vRBebBZz+W//zhd7j2G0gK3ZCAH5jx1nk1DQ==",
+          "publicKey": "MCowBQYDK2VwAyEAIflIgG86BM/Np+twNN44b/a+vuPQ6qvtNubmb7CPUkw=",
           "alg": "ed25519"
         },
-        "createdAt": "2026-10-16T14:50:00Z"
+        "createdAt": "2026-10-16T14:53:28.634Z"
       }
     ],
     "all_commits": [
@@ -225,11 +225,11 @@
             ],
             "generation": 1
           },
-          "signature": "RLANcQKSJkHwUftDxVW9maumUnc5JrWeEPJwsJTEK0ap8UqARFBrfkDsfmUStk1JS65+jCOgOtPq+dlyu7JMBA==",
-          "publicKey": "MCowBQYDK2VwAyEA8I6vqcOk82pHlW4+ar7SO9AGRmRJzg9Ap7Ze/soz/A4=",
+          "signature": "GFa7Wnyw/TyQZnks1zNUQEl5VP+HASVFhVovDvnCmnLiGcZ0Kz1NAVYBsSVZA+U4W/AbZM0uhLXd4OSRGMoSBA==",
+          "publicKey": "MCowBQYDK2VwAyEAIflIgG86BM/Np+twNN44b/a+vuPQ6qvtNubmb7CPUkw=",
           "alg": "ed25519"
         },
-        "createdAt": "2026-10-16T14:50:01Z",
+        "createdAt": "2026-10-16T14:53:30.500Z",
         "baselineScore": {
           "primary": 0.125,
           "noopRate": 0.875,
@@ -282,6 +282,6 @@
     "verified_improvements": 1,
     "anchor_surviving_improvements": 1,
     "milestone_reached": false,
-    "created_at": "2026-10-16T14:50:01Z"
+    "created_at": "2026-10-16T14:53:30.500Z"
   }
 }
