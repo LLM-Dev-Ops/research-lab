@@ -29,7 +29,7 @@
 # ============================================================================
 # Stage 1: Builder - Compile the Rust application
 # ============================================================================
-FROM rust:1.86-slim AS builder
+FROM rust:1.99.0-slim-bookworm AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -40,8 +40,10 @@ RUN apt-get update && apt-get install -y \
 # Create app directory
 WORKDIR /app
 
-# Copy workspace manifest
+# Copy the workspace manifest and lockfile so container builds resolve the
+# exact dependency graph already validated by CI.
 COPY Cargo.toml ./
+COPY Cargo.lock ./
 
 # Copy all crate manifests
 COPY llm-research-lab/Cargo.toml ./llm-research-lab/
@@ -57,7 +59,7 @@ COPY llm-research-agents ./llm-research-agents
 COPY config ./config
 
 # Build release binary with optimizations
-RUN cargo build --release --bin llm-research-lab
+RUN cargo build --locked --release --bin llm-research-lab
 
 # Strip debug symbols to reduce binary size
 RUN strip /app/target/release/llm-research-lab
