@@ -32,6 +32,9 @@ jobs:
       - name: Test Cloud Function
         run: npm run test:cf
 
+      - name: Test offline runtime isolation
+        run: python3 -m unittest discover -s test -p '*_test.py'
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
@@ -203,7 +206,6 @@ jobs:
     name: Docker Build
     runs-on: ubuntu-latest
     needs: [lint, test, build]
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
@@ -222,7 +224,7 @@ jobs:
   all-checks:
     name: All Checks Pass
     runs-on: ubuntu-latest
-    needs: [cloud-function, lint, test, build, security-audit]
+    needs: [cloud-function, lint, test, build, security-audit, coverage, docker]
     if: always()
     steps:
       - name: Check all jobs passed
@@ -231,7 +233,9 @@ jobs:
              [ "${{ needs.lint.result }}" != "success" ] || \
              [ "${{ needs.test.result }}" != "success" ] || \
              [ "${{ needs.build.result }}" != "success" ] || \
-             [ "${{ needs.security-audit.result }}" != "success" ]; then
+             [ "${{ needs.security-audit.result }}" != "success" ] || \
+             [ "${{ needs.coverage.result }}" != "success" ] || \
+             [ "${{ needs.docker.result }}" != "success" ]; then
             echo "One or more required jobs failed"
             exit 1
           fi
