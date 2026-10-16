@@ -1,0 +1,287 @@
+{
+  "package": "@metaharness/flywheel@0.1.12",
+  "evaluator": {
+    "holdout": "research-lab-runtime-recovery-v1",
+    "anchor": "research-lab-runtime-anchors-v1",
+    "model": "none",
+    "deterministic": true
+  },
+  "pinnedGateFingerprint": "c5942e7c9bf8f28fe7af47a6ec3887d11eeb3f8c8e8601cc6a7a54969ea0b981",
+  "liftCurve": [
+    {
+      "generation": 0,
+      "primary": 0.125,
+      "delta": 0,
+      "anchor": 1
+    },
+    {
+      "generation": 1,
+      "primary": 1,
+      "delta": 0.875,
+      "anchor": 1
+    }
+  ],
+  "generationsRun": 1,
+  "milestoneReached": false,
+  "finalPolicy": {
+    "implementation": "candidate"
+  },
+  "replayVerdict": {
+    "pass": true,
+    "checks": {
+      "receipts": true,
+      "reachesRoot": true,
+      "contiguousParents": true,
+      "allPromoted": true,
+      "gateUnchanged": true,
+      "gateReExecutes": true,
+      "allCommitsReceipts": true,
+      "sealedFieldsAuthentic": true
+    },
+    "failures": [],
+    "chainSummary": "gen1(implementation) → gen0(root)"
+  },
+  "replayBundle": {
+    "data_source": "LIVE",
+    "root_id": "root",
+    "chain": [
+      {
+        "id": "root__implementation_gen1",
+        "generation": 1,
+        "parents": [
+          "root"
+        ],
+        "mutation": {
+          "target": "implementation",
+          "summary": "Restore offline learning and aggregate all required CI jobs"
+        },
+        "primaryDelta": 0.875,
+        "anchorScore": 1,
+        "verdict": "PROMOTED",
+        "failureReasons": [],
+        "receipt": {
+          "payload": {
+            "kind": "candidate",
+            "id": "root__implementation_gen1",
+            "target": "implementation",
+            "verdict": "PROMOTED",
+            "primaryDelta": 0.875,
+            "baselineScore": {
+              "primary": 0.125,
+              "noopRate": 0.875,
+              "costPerWin": 8,
+              "regressed": false,
+              "itemWins": [
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                false
+              ]
+            },
+            "candidateScore": {
+              "primary": 1,
+              "noopRate": 0,
+              "costPerWin": 1,
+              "regressed": false,
+              "itemWins": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            "anchorScore": 1,
+            "failureReasons": [],
+            "parents": [
+              "root"
+            ],
+            "generation": 1
+          },
+          "signature": "RLANcQKSJkHwUftDxVW9maumUnc5JrWeEPJwsJTEK0ap8UqARFBrfkDsfmUStk1JS65+jCOgOtPq+dlyu7JMBA==",
+          "publicKey": "MCowBQYDK2VwAyEA8I6vqcOk82pHlW4+ar7SO9AGRmRJzg9Ap7Ze/soz/A4=",
+          "alg": "ed25519"
+        },
+        "createdAt": "2026-10-16T14:50:01Z",
+        "baselineScore": {
+          "primary": 0.125,
+          "noopRate": 0.875,
+          "costPerWin": 8,
+          "regressed": false,
+          "itemWins": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        },
+        "candidateScore": {
+          "primary": 1,
+          "noopRate": 0,
+          "costPerWin": 1,
+          "regressed": false,
+          "itemWins": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      },
+      {
+        "id": "root",
+        "generation": 0,
+        "parents": [],
+        "mutation": null,
+        "primaryDelta": 0,
+        "anchorScore": 1,
+        "verdict": "ROOT",
+        "failureReasons": [],
+        "receipt": {
+          "payload": {
+            "kind": "root",
+            "root": "root"
+          },
+          "signature": "k3/OxAt4SodAmfijlmkYr6ShUwQyuwhwvZRPdvJKe3ljbwf1GSkIXPUHCw1mFPyornuWT5jgB7WlJ/XbAbNQCg==",
+          "publicKey": "MCowBQYDK2VwAyEA8I6vqcOk82pHlW4+ar7SO9AGRmRJzg9Ap7Ze/soz/A4=",
+          "alg": "ed25519"
+        },
+        "createdAt": "2026-10-16T14:50:00Z"
+      }
+    ],
+    "all_commits": [
+      {
+        "id": "root__implementation_gen1",
+        "generation": 1,
+        "parents": [
+          "root"
+        ],
+        "mutation": {
+          "target": "implementation",
+          "summary": "Restore offline learning and aggregate all required CI jobs"
+        },
+        "primaryDelta": 0.875,
+        "anchorScore": 1,
+        "verdict": "PROMOTED",
+        "failureReasons": [],
+        "receipt": {
+          "payload": {
+            "kind": "candidate",
+            "id": "root__implementation_gen1",
+            "target": "implementation",
+            "verdict": "PROMOTED",
+            "primaryDelta": 0.875,
+            "baselineScore": {
+              "primary": 0.125,
+              "noopRate": 0.875,
+              "costPerWin": 8,
+              "regressed": false,
+              "itemWins": [
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                false
+              ]
+            },
+            "candidateScore": {
+              "primary": 1,
+              "noopRate": 0,
+              "costPerWin": 1,
+              "regressed": false,
+              "itemWins": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            },
+            "anchorScore": 1,
+            "failureReasons": [],
+            "parents": [
+              "root"
+            ],
+            "generation": 1
+          },
+          "signature": "RLANcQKSJkHwUftDxVW9maumUnc5JrWeEPJwsJTEK0ap8UqARFBrfkDsfmUStk1JS65+jCOgOtPq+dlyu7JMBA==",
+          "publicKey": "MCowBQYDK2VwAyEA8I6vqcOk82pHlW4+ar7SO9AGRmRJzg9Ap7Ze/soz/A4=",
+          "alg": "ed25519"
+        },
+        "createdAt": "2026-10-16T14:50:01Z",
+        "baselineScore": {
+          "primary": 0.125,
+          "noopRate": 0.875,
+          "costPerWin": 8,
+          "regressed": false,
+          "itemWins": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        },
+        "candidateScore": {
+          "primary": 1,
+          "noopRate": 0,
+          "costPerWin": 1,
+          "regressed": false,
+          "itemWins": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      }
+    ],
+    "lift_curve": [
+      {
+        "generation": 0,
+        "primary": 0.125,
+        "delta": 0,
+        "anchor": 1
+      },
+      {
+        "generation": 1,
+        "primary": 1,
+        "delta": 0.875,
+        "anchor": 1
+      }
+    ],
+    "gate_fingerprint": "c5942e7c9bf8f28fe7af47a6ec3887d11eeb3f8c8e8601cc6a7a54969ea0b981",
+    "verified_improvements": 1,
+    "anchor_surviving_improvements": 1,
+    "milestone_reached": false,
+    "created_at": "2026-10-16T14:50:01Z"
+  }
+}

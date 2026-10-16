@@ -35,3 +35,8 @@ CLAUDE.md
 
 # Local tooling (Google Cloud SDK etc.)
 .tools/
+
+# Local orchestration state and Python bytecode
+.swarm/
+ruvector.db*
+__pycache__/
