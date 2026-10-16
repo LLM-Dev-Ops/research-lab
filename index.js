@@ -27,6 +27,8 @@ const AGENT_ROUTES = {
 const HEALTH_PATH = '/v1/research-lab/health';
 const HEALTH_AGENTS = ['hypothesis', 'metrics'];
 const BACKEND_TIMEOUT_MS = 110_000; // slightly under the 120s Cloud Function timeout
+const MAX_BODY_BYTES = 64 * 1024;
+const SAFE_REQUEST_ID = /^[A-Za-z0-9._:-]{1,128}$/;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -62,16 +64,67 @@ function setCorsHeaders(req, res) {
   res.set('Access-Control-Max-Age', '3600');
 }
 
+function isTrustedOrigin(req) {
+  const origin = req.headers.origin || '';
+  return !origin || ALLOWED_ORIGINS.includes('*') || ALLOWED_ORIGINS.includes(origin);
+}
+
+function isJsonContentType(value = '') {
+  const mediaType = value.split(';', 1)[0].trim().toLowerCase();
+  return mediaType === 'application/json' || mediaType.endsWith('+json');
+}
+
+function requestBodyBytes(req) {
+  if (Buffer.isBuffer(req.rawBody)) return req.rawBody.length;
+
+  const declared = Number(req.headers['content-length']);
+  if (Number.isSafeInteger(declared) && declared >= 0) return declared;
+
+  if (req.body === undefined) return 0;
+  return Buffer.byteLength(JSON.stringify(req.body), 'utf8');
+}
+
+function isObjectPayload(body) {
+  return body !== null && typeof body === 'object' && !Array.isArray(body);
+}
+
+function requestId(value) {
+  return typeof value === 'string' && SAFE_REQUEST_ID.test(value)
+    ? value
+    : crypto.randomUUID();
+}
+
+function methodNotAllowed(res, allowed, message, ctx) {
+  res.set('Allow', allowed);
+  return res.status(405).json({
+    error: 'Method Not Allowed',
+    message,
+    execution_metadata: buildExecutionMetadata(ctx.traceId, ctx.executionId),
+    layers_executed: [
+      {
+        layer: 'AGENT_ROUTING',
+        status: 'failed',
+        duration_ms: Date.now() - ctx.startTime,
+      },
+    ],
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Health Handler
 // ---------------------------------------------------------------------------
 async function handleHealth(req, res, ctx) {
+  if (req.method !== 'GET') {
+    return methodNotAllowed(res, 'GET', 'Health endpoint only accepts GET requests', ctx);
+  }
+
   const agents = HEALTH_AGENTS.map((name) => ({ name, status: 'healthy' }));
 
   if (BACKEND_URL) {
     try {
       const resp = await fetch(`${BACKEND_URL}/health`, {
         signal: AbortSignal.timeout(5000),
+        redirect: 'error',
       });
       if (!resp.ok) {
         agents.forEach((a) => { a.status = 'degraded'; });
@@ -103,17 +156,35 @@ async function handleHealth(req, res, ctx) {
 // ---------------------------------------------------------------------------
 async function handleAgent(req, res, route, ctx) {
   if (req.method !== 'POST') {
-    return res.status(405).json({
-      error: 'Method Not Allowed',
-      message: `${route.name} agent only accepts POST requests`,
+    return methodNotAllowed(
+      res,
+      'POST',
+      `${route.name} agent only accepts POST requests`,
+      ctx,
+    );
+  }
+
+  if (!isJsonContentType(req.headers['content-type'])) {
+    return res.status(415).json({
+      error: 'Unsupported Media Type',
+      message: 'Content-Type must be application/json',
       execution_metadata: buildExecutionMetadata(ctx.traceId, ctx.executionId),
-      layers_executed: [
-        {
-          layer: 'AGENT_ROUTING',
-          status: 'failed',
-          duration_ms: Date.now() - ctx.startTime,
-        },
-      ],
+    });
+  }
+
+  if (requestBodyBytes(req) > MAX_BODY_BYTES) {
+    return res.status(413).json({
+      error: 'Payload Too Large',
+      message: `Request body exceeds the ${MAX_BODY_BYTES}-byte limit`,
+      execution_metadata: buildExecutionMetadata(ctx.traceId, ctx.executionId),
+    });
+  }
+
+  if (!isObjectPayload(req.body)) {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: 'Request body must be a JSON object',
+      execution_metadata: buildExecutionMetadata(ctx.traceId, ctx.executionId),
     });
   }
 
@@ -146,6 +217,7 @@ async function handleAgent(req, res, route, ctx) {
       },
       body: JSON.stringify(req.body),
       signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
+      redirect: 'error',
     });
 
     const data = await backendRes.json();
@@ -165,7 +237,9 @@ async function handleAgent(req, res, route, ctx) {
 
     res.status(status).json({
       error: status === 504 ? 'Gateway Timeout' : 'Bad Gateway',
-      message: err.message,
+      message: status === 504
+        ? 'The research backend did not respond in time'
+        : 'The research backend request failed',
       execution_metadata: buildExecutionMetadata(ctx.traceId, ctx.executionId),
       layers_executed: [
         { layer: 'AGENT_ROUTING', status: 'completed', duration_ms: routingDuration },
@@ -182,11 +256,14 @@ exports.handler = async (req, res) => {
   // CORS
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') {
+    if (!isTrustedOrigin(req)) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Origin is not allowed' });
+    }
     return res.status(204).send('');
   }
 
   const startTime = Date.now();
-  const traceId = req.headers['x-correlation-id'] || crypto.randomUUID();
+  const traceId = requestId(req.headers['x-correlation-id']);
   const executionId = crypto.randomUUID();
   const ctx = { traceId, executionId, startTime };
 
