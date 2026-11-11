@@ -1,0 +1,9 @@
+{
+  "baseline": "83c4850c04d6243c1f700ec4a6a0e406a7d7198a",
+  "acceptance": "Six inherited stdio socket cases must fail closed before running task code, with no synthetic canary forwarded",
+  "anchors": "All four existing offline_runtime_test methods and all 15 Node tests retained unchanged; normal pipe/file stdio and exit status preserved",
+  "trials": 3,
+  "darwin": {"generations": 1, "children": 1, "concurrency": 1, "risk_budget": 0},
+  "promotion": "Full CI, Rust/security/coverage and real Ruflo execution/learning required; component checks alone do not permit merge",
+  "scope": "Unprivileged Linux offline launcher, not a filesystem sandbox or protection against deliberate filesystem delegation"
+}
