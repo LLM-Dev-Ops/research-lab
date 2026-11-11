@@ -34,15 +34,20 @@ def main():
             number = seccomp.seccomp_syscall_resolve_name(name.encode())
             if number < 0 or seccomp.seccomp_rule_add(context, 0x50000 | errno.EPERM, number, 0) != 0:
                 raise SystemExit(f"Cannot deny {name}; refusing to execute")
-        # Remove any non-stdio socket inherited from the launcher.
+        # write()/writev() can send on an already-connected socket without
+        # invoking connect/send*. Refuse socket-backed stdio before task exec;
+        # keep ordinary terminal, pipe and file streams unchanged. Remove all
+        # other socket descriptors inherited from the launcher.
         for item in os.listdir("/proc/self/fd"):
             descriptor = int(item)
-            if descriptor > 2:
-                try:
-                    if stat.S_ISSOCK(os.fstat(descriptor).st_mode):
-                        os.close(descriptor)
-                except OSError:
-                    pass
+            try:
+                is_socket = stat.S_ISSOCK(os.fstat(descriptor).st_mode)
+            except OSError:
+                continue  # /proc directory descriptor may already be closed.
+            if is_socket:
+                if descriptor <= 2:
+                    raise SystemExit("Socket-backed standard streams are not allowed; refusing to execute")
+                os.close(descriptor)
         if seccomp.seccomp_load(context) != 0:
             raise SystemExit("Cannot install seccomp filter; refusing to execute")
     finally:

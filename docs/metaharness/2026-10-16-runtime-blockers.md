@@ -32,6 +32,12 @@ The recovery uses the unchanged documented `hooks post-task` interface with:
   and io_uring setup, inherited by child processes. Existing non-stdio socket
   descriptors are closed. If restrictions cannot load, execution is refused.
 
+Socket-backed stdin/stdout/stderr are refused before command execution: ordinary
+`write` operations on these connected descriptors would otherwise bypass the
+connect/send restrictions. Use a terminal, pipe or regular file for standard
+streams. The launcher does not treat a pipe as a trusted external consumer;
+the invoking environment remains responsible for where its output goes.
+
 The runner is specifically an offline command runner, not a general filesystem
 sandbox. Run it with the normal unprivileged desktop account. It needs Python 3
 and libseccomp2. Download/install dependencies separately, before this command.
