@@ -1,0 +1,463 @@
+{
+  "trials": [
+    {
+      "trial": 0,
+      "revision": "83c4850c04d6243c1f700ec4a6a0e406a7d7198a",
+      "cases": [
+        {
+          "id": "stdin-direct",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stdin-child",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stdout-direct",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stdout-child",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stderr-direct",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stderr-child",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        }
+      ],
+      "passed": 0,
+      "total": 6
+    },
+    {
+      "trial": 0,
+      "revision": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "cases": [
+        {
+          "id": "stdin-direct",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stdin-child",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stdout-direct",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stdout-child",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stderr-direct",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stderr-child",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "trial": 1,
+      "revision": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "cases": [
+        {
+          "id": "stdin-direct",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stdin-child",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stdout-direct",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stdout-child",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stderr-direct",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stderr-child",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "trial": 1,
+      "revision": "83c4850c04d6243c1f700ec4a6a0e406a7d7198a",
+      "cases": [
+        {
+          "id": "stdin-direct",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stdin-child",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stdout-direct",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stdout-child",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stderr-direct",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stderr-child",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        }
+      ],
+      "passed": 0,
+      "total": 6
+    },
+    {
+      "trial": 2,
+      "revision": "83c4850c04d6243c1f700ec4a6a0e406a7d7198a",
+      "cases": [
+        {
+          "id": "stdin-direct",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stdin-child",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stdout-direct",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stdout-child",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stderr-direct",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        },
+        {
+          "id": "stderr-child",
+          "exit": 0,
+          "canary_forwarded": true,
+          "pass": false
+        }
+      ],
+      "passed": 0,
+      "total": 6
+    },
+    {
+      "trial": 2,
+      "revision": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "cases": [
+        {
+          "id": "stdin-direct",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stdin-child",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stdout-direct",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stdout-child",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stderr-direct",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        },
+        {
+          "id": "stderr-child",
+          "exit": 1,
+          "canary_forwarded": false,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "total": 6
+    }
+  ],
+  "tests": {
+    "83c4850c04d6243c1f700ec4a6a0e406a7d7198a": {
+      "pythonExit": 0,
+      "python": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.461s\n\nOK\n",
+      "nodeExit": 0,
+      "node": "TAP version 13\n# Subtest: returns an exact configured origin\nok 1 - returns an exact configured origin\n  ---\n  duration_ms: 7.260189\n  type: 'test'\n  ...\n# Subtest: does not grant CORS to a disallowed origin\nok 2 - does not grant CORS to a disallowed origin\n  ---\n  duration_ms: 1.316938\n  type: 'test'\n  ...\n# Subtest: does not emit an allow-origin header without an Origin request header\nok 3 - does not emit an allow-origin header without an Origin request header\n  ---\n  duration_ms: 1.149966\n  type: 'test'\n  ...\n# Subtest: trims configured origins before exact matching\nok 4 - trims configured origins before exact matching\n  ---\n  duration_ms: 5.111033\n  type: 'test'\n  ...\n# Subtest: preserves explicitly configured wildcard behavior\nok 5 - preserves explicitly configured wildcard behavior\n  ---\n  duration_ms: 3.0845\n  type: 'test'\n  ...\n# Subtest: preflight rejects a disallowed origin\nok 6 - preflight rejects a disallowed origin\n  ---\n  duration_ms: 2.294521\n  type: 'test'\n  ...\n# Subtest: unknown route and missing backend remain fail-closed\nok 7 - unknown route and missing backend remain fail-closed\n  ---\n  duration_ms: 3.472049\n  type: 'test'\n  ...\n# Subtest: agent endpoints require POST and advertise the allowed method\nok 8 - agent endpoints require POST and advertise the allowed method\n  ---\n  duration_ms: 3.142718\n  type: 'test'\n  ...\n# Subtest: health endpoint requires GET and advertises the allowed method\nok 9 - health endpoint requires GET and advertises the allowed method\n  ---\n  duration_ms: 2.630451\n  type: 'test'\n  ...\n# Subtest: agent endpoints require a JSON media type before backend lookup\nok 10 - agent endpoints require a JSON media type before backend lookup\n  ---\n  duration_ms: 0.765585\n  type: 'test'\n  ...\n# Subtest: agent endpoints reject non-object JSON payloads\nok 11 - agent endpoints reject non-object JSON payloads\n  ---\n  duration_ms: 0.946394\n  type: 'test'\n  ...\n# Subtest: agent endpoints reject payloads larger than 64 KiB\nok 12 - agent endpoints reject payloads larger than 64 KiB\n  ---\n  duration_ms: 2.968825\n  type: 'test'\n  ...\n# Subtest: valid JSON is forwarded without redirects\nok 13 - valid JSON is forwarded without redirects\n  ---\n  duration_ms: 2.376234\n  type: 'test'\n  ...\n# Subtest: unsafe correlation identifiers are not reflected or forwarded\nok 14 - unsafe correlation identifiers are not reflected or forwarded\n  ---\n  duration_ms: 1.209156\n  type: 'test'\n  ...\n# Subtest: backend failures do not expose internal error details\nok 15 - backend failures do not expose internal error details\n  ---\n  duration_ms: 0.971642\n  type: 'test'\n  ...\n1..15\n# tests 15\n# suites 0\n# pass 15\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 289.666036\n"
+    },
+    "1c3edc64bc650e8cb0e8ad7788cc889b285d244c": {
+      "pythonExit": 0,
+      "python": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.529s\n\nOK\n",
+      "nodeExit": 0,
+      "node": "TAP version 13\n# Subtest: returns an exact configured origin\nok 1 - returns an exact configured origin\n  ---\n  duration_ms: 6.586627\n  type: 'test'\n  ...\n# Subtest: does not grant CORS to a disallowed origin\nok 2 - does not grant CORS to a disallowed origin\n  ---\n  duration_ms: 0.916598\n  type: 'test'\n  ...\n# Subtest: does not emit an allow-origin header without an Origin request header\nok 3 - does not emit an allow-origin header without an Origin request header\n  ---\n  duration_ms: 0.884468\n  type: 'test'\n  ...\n# Subtest: trims configured origins before exact matching\nok 4 - trims configured origins before exact matching\n  ---\n  duration_ms: 0.739005\n  type: 'test'\n  ...\n# Subtest: preserves explicitly configured wildcard behavior\nok 5 - preserves explicitly configured wildcard behavior\n  ---\n  duration_ms: 0.92852\n  type: 'test'\n  ...\n# Subtest: preflight rejects a disallowed origin\nok 6 - preflight rejects a disallowed origin\n  ---\n  duration_ms: 5.562011\n  type: 'test'\n  ...\n# Subtest: unknown route and missing backend remain fail-closed\nok 7 - unknown route and missing backend remain fail-closed\n  ---\n  duration_ms: 2.536943\n  type: 'test'\n  ...\n# Subtest: agent endpoints require POST and advertise the allowed method\nok 8 - agent endpoints require POST and advertise the allowed method\n  ---\n  duration_ms: 3.485158\n  type: 'test'\n  ...\n# Subtest: health endpoint requires GET and advertises the allowed method\nok 9 - health endpoint requires GET and advertises the allowed method\n  ---\n  duration_ms: 0.625052\n  type: 'test'\n  ...\n# Subtest: agent endpoints require a JSON media type before backend lookup\nok 10 - agent endpoints require a JSON media type before backend lookup\n  ---\n  duration_ms: 1.770624\n  type: 'test'\n  ...\n# Subtest: agent endpoints reject non-object JSON payloads\nok 11 - agent endpoints reject non-object JSON payloads\n  ---\n  duration_ms: 1.930459\n  type: 'test'\n  ...\n# Subtest: agent endpoints reject payloads larger than 64 KiB\nok 12 - agent endpoints reject payloads larger than 64 KiB\n  ---\n  duration_ms: 0.609242\n  type: 'test'\n  ...\n# Subtest: valid JSON is forwarded without redirects\nok 13 - valid JSON is forwarded without redirects\n  ---\n  duration_ms: 2.53938\n  type: 'test'\n  ...\n# Subtest: unsafe correlation identifiers are not reflected or forwarded\nok 14 - unsafe correlation identifiers are not reflected or forwarded\n  ---\n  duration_ms: 1.146539\n  type: 'test'\n  ...\n# Subtest: backend failures do not expose internal error details\nok 15 - backend failures do not expose internal error details\n  ---\n  duration_ms: 0.873127\n  type: 'test'\n  ...\n1..15\n# tests 15\n# suites 0\n# pass 15\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 244.3033\n"
+    }
+  },
+  "inverse": {
+    "path": "scripts/offline-exec.py",
+    "parentBytes": "#!/usr/bin/env python3\n\"\"\"Execute a Linux command with kernel-enforced socket and io_uring denial.\"\"\"\nimport ctypes\nimport ctypes.util\nimport errno\nimport os\nimport stat\nimport sys\n\n\ndef main():\n    if sys.platform != \"linux\" or len(sys.argv) < 2:\n        raise SystemExit(\"Usage (Linux only): offline-exec.py COMMAND [ARGS...]\")\n    library = ctypes.util.find_library(\"seccomp\")\n    if not library:\n        raise SystemExit(\"libseccomp is required; refusing to run with network access\")\n    seccomp = ctypes.CDLL(library, use_errno=True)\n    seccomp.seccomp_init.argtypes = [ctypes.c_uint32]\n    seccomp.seccomp_init.restype = ctypes.c_void_p\n    seccomp.seccomp_syscall_resolve_name.argtypes = [ctypes.c_char_p]\n    seccomp.seccomp_syscall_resolve_name.restype = ctypes.c_int\n    seccomp.seccomp_rule_add.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_int, ctypes.c_uint]\n    seccomp.seccomp_rule_add.restype = ctypes.c_int\n    seccomp.seccomp_load.argtypes = [ctypes.c_void_p]\n    seccomp.seccomp_load.restype = ctypes.c_int\n    seccomp.seccomp_release.argtypes = [ctypes.c_void_p]\n    context = seccomp.seccomp_init(0x7FFF0000)  # SCMP_ACT_ALLOW\n    if not context:\n        raise SystemExit(\"Unable to initialize seccomp\")\n    try:\n        # Deny new sockets and inherited-socket operations. Also deny io_uring,\n        # whose asynchronous networking could otherwise avoid connect/send syscalls.\n        for name in (\"socket\", \"connect\", \"sendto\", \"sendmsg\", \"sendmmsg\", \"io_uring_setup\"):\n            number = seccomp.seccomp_syscall_resolve_name(name.encode())\n            if number < 0 or seccomp.seccomp_rule_add(context, 0x50000 | errno.EPERM, number, 0) != 0:\n                raise SystemExit(f\"Cannot deny {name}; refusing to execute\")\n        # Remove any non-stdio socket inherited from the launcher.\n        for item in os.listdir(\"/proc/self/fd\"):\n            descriptor = int(item)\n            if descriptor > 2:\n                try:\n                    if stat.S_ISSOCK(os.fstat(descriptor).st_mode):\n                        os.close(descriptor)\n                except OSError:\n                    pass\n        if seccomp.seccomp_load(context) != 0:\n            raise SystemExit(\"Cannot install seccomp filter; refusing to execute\")\n    finally:\n        seccomp.seccomp_release(context)\n    os.execvp(sys.argv[1], sys.argv[1:])\n\n\nif __name__ == \"__main__\":\n    main()\n",
+    "sha256": "e4abfedba54133eeedae7fddb1bc35308a0e93df194453ab424cd96c2dd7ee89"
+  },
+  "result": {
+    "liftCurve": [
+      {
+        "generation": 0,
+        "primary": 0,
+        "delta": 0,
+        "anchor": 1
+      }
+    ],
+    "promotions": [],
+    "lineage": {
+      "commits": {}
+    },
+    "replayBundle": {
+      "data_source": "LIVE_LOCAL_SOCKETPAIR",
+      "root_id": "root",
+      "chain": [
+        {
+          "id": "root",
+          "generation": 0,
+          "parents": [],
+          "mutation": null,
+          "primaryDelta": 0,
+          "anchorScore": 1,
+          "verdict": "ROOT",
+          "failureReasons": [],
+          "receipt": {
+            "payload": {
+              "kind": "root",
+              "root": "root"
+            },
+            "signature": "LXB9n4W9Xi415OAJ4FumVw5q6mK5Yx5gYAaPmIVIyE7De7p8U7VNp7bPltqM83/ZVHbWq7B/umACViaCXaX5BQ==",
+            "publicKey": "MCowBQYDK2VwAyEAguAa2SUY9XkCwAjGne05o6X5+6i/rTJMatsKXxJKno8=",
+            "alg": "ed25519"
+          },
+          "createdAt": "gen-0"
+        }
+      ],
+      "all_commits": [
+        {
+          "id": "root__revision_gen1",
+          "generation": 1,
+          "parents": [
+            "root"
+          ],
+          "mutation": {
+            "target": "revision",
+            "summary": "Refuse socket-backed stdio before offline task execution",
+            "inverse": {
+              "path": "scripts/offline-exec.py",
+              "parentBytes": "#!/usr/bin/env python3\n\"\"\"Execute a Linux command with kernel-enforced socket and io_uring denial.\"\"\"\nimport ctypes\nimport ctypes.util\nimport errno\nimport os\nimport stat\nimport sys\n\n\ndef main():\n    if sys.platform != \"linux\" or len(sys.argv) < 2:\n        raise SystemExit(\"Usage (Linux only): offline-exec.py COMMAND [ARGS...]\")\n    library = ctypes.util.find_library(\"seccomp\")\n    if not library:\n        raise SystemExit(\"libseccomp is required; refusing to run with network access\")\n    seccomp = ctypes.CDLL(library, use_errno=True)\n    seccomp.seccomp_init.argtypes = [ctypes.c_uint32]\n    seccomp.seccomp_init.restype = ctypes.c_void_p\n    seccomp.seccomp_syscall_resolve_name.argtypes = [ctypes.c_char_p]\n    seccomp.seccomp_syscall_resolve_name.restype = ctypes.c_int\n    seccomp.seccomp_rule_add.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_int, ctypes.c_uint]\n    seccomp.seccomp_rule_add.restype = ctypes.c_int\n    seccomp.seccomp_load.argtypes = [ctypes.c_void_p]\n    seccomp.seccomp_load.restype = ctypes.c_int\n    seccomp.seccomp_release.argtypes = [ctypes.c_void_p]\n    context = seccomp.seccomp_init(0x7FFF0000)  # SCMP_ACT_ALLOW\n    if not context:\n        raise SystemExit(\"Unable to initialize seccomp\")\n    try:\n        # Deny new sockets and inherited-socket operations. Also deny io_uring,\n        # whose asynchronous networking could otherwise avoid connect/send syscalls.\n        for name in (\"socket\", \"connect\", \"sendto\", \"sendmsg\", \"sendmmsg\", \"io_uring_setup\"):\n            number = seccomp.seccomp_syscall_resolve_name(name.encode())\n            if number < 0 or seccomp.seccomp_rule_add(context, 0x50000 | errno.EPERM, number, 0) != 0:\n                raise SystemExit(f\"Cannot deny {name}; refusing to execute\")\n        # Remove any non-stdio socket inherited from the launcher.\n        for item in os.listdir(\"/proc/self/fd\"):\n            descriptor = int(item)\n            if descriptor > 2:\n                try:\n                    if stat.S_ISSOCK(os.fstat(descriptor).st_mode):\n                        os.close(descriptor)\n                except OSError:\n                    pass\n        if seccomp.seccomp_load(context) != 0:\n            raise SystemExit(\"Cannot install seccomp filter; refusing to execute\")\n    finally:\n        seccomp.seccomp_release(context)\n    os.execvp(sys.argv[1], sys.argv[1:])\n\n\nif __name__ == \"__main__\":\n    main()\n",
+              "sha256": "e4abfedba54133eeedae7fddb1bc35308a0e93df194453ab424cd96c2dd7ee89"
+            }
+          },
+          "primaryDelta": 1,
+          "anchorScore": null,
+          "verdict": "REJECTED",
+          "failureReasons": [
+            "safety_regressed"
+          ],
+          "receipt": {
+            "payload": {
+              "kind": "candidate",
+              "id": "root__revision_gen1",
+              "target": "revision",
+              "verdict": "REJECTED",
+              "primaryDelta": 1,
+              "baselineScore": {
+                "primary": 0,
+                "itemWins": [
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ],
+                "noopRate": 0,
+                "costPerWin": 0,
+                "regressed": true
+              },
+              "candidateScore": {
+                "primary": 1,
+                "itemWins": [
+                  true,
+                  true,
+                  true,
+                  true,
+                  true,
+                  true
+                ],
+                "noopRate": 0,
+                "costPerWin": 0,
+                "regressed": true
+              },
+              "anchorScore": null,
+              "failureReasons": [
+                "safety_regressed"
+              ],
+              "parents": [
+                "root"
+              ],
+              "generation": 1
+            },
+            "signature": "GQTQRmGrff4dLfoY7YBBbnSKIZQDa69eTvEjCByl/GU18YF6CSSD3mPnMMt91KYx1rfQZ+TnV98EfroKe2RVDA==",
+            "publicKey": "MCowBQYDK2VwAyEAguAa2SUY9XkCwAjGne05o6X5+6i/rTJMatsKXxJKno8=",
+            "alg": "ed25519"
+          },
+          "createdAt": "gen-1",
+          "baselineScore": {
+            "primary": 0,
+            "itemWins": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "noopRate": 0,
+            "costPerWin": 0,
+            "regressed": true
+          },
+          "candidateScore": {
+            "primary": 1,
+            "itemWins": [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            "noopRate": 0,
+            "costPerWin": 0,
+            "regressed": true
+          }
+        }
+      ],
+      "lift_curve": [
+        {
+          "generation": 0,
+          "primary": 0,
+          "delta": 0,
+          "anchor": 1
+        }
+      ],
+      "gate_fingerprint": "c5942e7c9bf8f28fe7af47a6ec3887d11eeb3f8c8e8601cc6a7a54969ea0b981",
+      "verified_improvements": 0,
+      "anchor_surviving_improvements": 0,
+      "milestone_reached": false,
+      "created_at": "gen-1"
+    },
+    "generationsRun": 1,
+    "milestoneReached": false,
+    "finalPolicy": {
+      "revision": "83c4850c04d6243c1f700ec4a6a0e406a7d7198a"
+    }
+  },
+  "replay": {
+    "pass": true,
+    "checks": {
+      "receipts": true,
+      "reachesRoot": true,
+      "contiguousParents": true,
+      "allPromoted": true,
+      "gateUnchanged": true,
+      "gateReExecutes": true,
+      "allCommitsReceipts": true,
+      "sealedFieldsAuthentic": true
+    },
+    "failures": [],
+    "chainSummary": "gen0(root)"
+  },
+  "gate": "c5942e7c9bf8f28fe7af47a6ec3887d11eeb3f8c8e8601cc6a7a54969ea0b981",
+  "boundary": "regressed=true is an explicit full-promotion veto: current Rust/security/CI and real Ruflo execution/learning are not cleared. It is not a newly regressed test. cost/noop0 neutral, unmeasured. Root-only replay is not candidate acceptance. Local socketpair only; no model/deployed integration claim."
+}

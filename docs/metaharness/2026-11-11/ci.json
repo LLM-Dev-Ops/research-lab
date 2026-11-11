@@ -1,0 +1,765 @@
+{
+  "total_count": 8,
+  "jobs": [
+    {
+      "id": 130537914499,
+      "run_id": 43025148490,
+      "workflow_name": "CI",
+      "head_branch": "metaharness/offline-stdio-2026-11-11",
+      "run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/runs/43025148490",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOQewtHc8AAAAeZKqAgw",
+      "head_sha": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/jobs/130537914499",
+      "html_url": "https://github.com/LLM-Dev-Ops/research-lab/actions/runs/43025148490/job/130537914499",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-11T12:59:56Z",
+      "started_at": "2026-11-11T12:59:58Z",
+      "completed_at": "2026-11-11T13:00:56Z",
+      "name": "Lint",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-11T12:59:58Z",
+          "completed_at": "2026-11-11T12:59:59Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-11T12:59:59Z",
+          "completed_at": "2026-11-11T13:00:00Z"
+        },
+        {
+          "name": "Install Rust toolchain",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-11T13:00:00Z",
+          "completed_at": "2026-11-11T13:00:01Z"
+        },
+        {
+          "name": "Cache cargo registry",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-11T13:00:01Z",
+          "completed_at": "2026-11-11T13:00:01Z"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-11T13:00:01Z",
+          "completed_at": "2026-11-11T13:00:02Z"
+        },
+        {
+          "name": "Run Clippy",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-11T13:00:02Z",
+          "completed_at": "2026-11-11T13:00:50Z"
+        },
+        {
+          "name": "Post Cache cargo registry",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-11T13:00:50Z",
+          "completed_at": "2026-11-11T13:00:54Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-11-11T13:00:54Z",
+          "completed_at": "2026-11-11T13:00:54Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-11-11T13:00:54Z",
+          "completed_at": "2026-11-11T13:00:54Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/check-runs/130537914499",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000037056,
+      "runner_name": "GitHub Actions 1000037056",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 130537914904,
+      "run_id": 43025148490,
+      "workflow_name": "CI",
+      "head_branch": "metaharness/offline-stdio-2026-11-11",
+      "run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/runs/43025148490",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOQewtHc8AAAAeZKqCGA",
+      "head_sha": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/jobs/130537914904",
+      "html_url": "https://github.com/LLM-Dev-Ops/research-lab/actions/runs/43025148490/job/130537914904",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-11-11T12:59:56Z",
+      "started_at": "2026-11-11T12:59:58Z",
+      "completed_at": "2026-11-11T13:03:16Z",
+      "name": "Security Audit",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-11T12:59:58Z",
+          "completed_at": "2026-11-11T12:59:59Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-11T12:59:59Z",
+          "completed_at": "2026-11-11T13:00:00Z"
+        },
+        {
+          "name": "Install Rust toolchain",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-11T13:00:00Z",
+          "completed_at": "2026-11-11T13:00:02Z"
+        },
+        {
+          "name": "Install cargo-audit",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-11T13:00:02Z",
+          "completed_at": "2026-11-11T13:03:11Z"
+        },
+        {
+          "name": "Run security audit",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 5,
+          "started_at": "2026-11-11T13:03:11Z",
+          "completed_at": "2026-11-11T13:03:14Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-11T13:03:14Z",
+          "completed_at": "2026-11-11T13:03:15Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-11T13:03:15Z",
+          "completed_at": "2026-11-11T13:03:15Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/check-runs/130537914904",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000037057,
+      "runner_name": "GitHub Actions 1000037057",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 130537915002,
+      "run_id": 43025148490,
+      "workflow_name": "CI",
+      "head_branch": "metaharness/offline-stdio-2026-11-11",
+      "run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/runs/43025148490",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOQewtHc8AAAAeZKqCeg",
+      "head_sha": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/jobs/130537915002",
+      "html_url": "https://github.com/LLM-Dev-Ops/research-lab/actions/runs/43025148490/job/130537915002",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-11T12:59:56Z",
+      "started_at": "2026-11-11T12:59:58Z",
+      "completed_at": "2026-11-11T13:01:44Z",
+      "name": "Build",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-11T12:59:58Z",
+          "completed_at": "2026-11-11T12:59:59Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-11T12:59:59Z",
+          "completed_at": "2026-11-11T13:00:00Z"
+        },
+        {
+          "name": "Install Rust toolchain",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-11T13:00:00Z",
+          "completed_at": "2026-11-11T13:00:01Z"
+        },
+        {
+          "name": "Cache cargo registry",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-11T13:00:01Z",
+          "completed_at": "2026-11-11T13:00:02Z"
+        },
+        {
+          "name": "Build release",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-11T13:00:02Z",
+          "completed_at": "2026-11-11T13:01:36Z"
+        },
+        {
+          "name": "Upload binary artifact",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-11T13:01:36Z",
+          "completed_at": "2026-11-11T13:01:38Z"
+        },
+        {
+          "name": "Post Cache cargo registry",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-11T13:01:38Z",
+          "completed_at": "2026-11-11T13:01:42Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-11-11T13:01:42Z",
+          "completed_at": "2026-11-11T13:01:42Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-11-11T13:01:42Z",
+          "completed_at": "2026-11-11T13:01:42Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/check-runs/130537915002",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000037058,
+      "runner_name": "GitHub Actions 1000037058",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 130537915086,
+      "run_id": 43025148490,
+      "workflow_name": "CI",
+      "head_branch": "metaharness/offline-stdio-2026-11-11",
+      "run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/runs/43025148490",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOQewtHc8AAAAeZKqCzg",
+      "head_sha": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/jobs/130537915086",
+      "html_url": "https://github.com/LLM-Dev-Ops/research-lab/actions/runs/43025148490/job/130537915086",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-11T12:59:56Z",
+      "started_at": "2026-11-11T12:59:58Z",
+      "completed_at": "2026-11-11T13:01:28Z",
+      "name": "Code Coverage",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-11T12:59:59Z",
+          "completed_at": "2026-11-11T13:00:00Z"
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-11T13:00:00Z",
+          "completed_at": "2026-11-11T13:00:25Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-11T13:00:25Z",
+          "completed_at": "2026-11-11T13:00:26Z"
+        },
+        {
+          "name": "Install Rust toolchain",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-11T13:00:26Z",
+          "completed_at": "2026-11-11T13:00:29Z"
+        },
+        {
+          "name": "Install cargo-llvm-cov",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-11T13:00:29Z",
+          "completed_at": "2026-11-11T13:00:30Z"
+        },
+        {
+          "name": "Generate coverage report",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-11T13:00:30Z",
+          "completed_at": "2026-11-11T13:01:17Z"
+        },
+        {
+          "name": "Upload coverage to Codecov",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-11T13:01:17Z",
+          "completed_at": "2026-11-11T13:01:20Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-11-11T13:01:20Z",
+          "completed_at": "2026-11-11T13:01:20Z"
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-11-11T13:01:20Z",
+          "completed_at": "2026-11-11T13:01:26Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-11-11T13:01:26Z",
+          "completed_at": "2026-11-11T13:01:26Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/check-runs/130537915086",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000037059,
+      "runner_name": "GitHub Actions 1000037059",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 130537915091,
+      "run_id": 43025148490,
+      "workflow_name": "CI",
+      "head_branch": "metaharness/offline-stdio-2026-11-11",
+      "run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/runs/43025148490",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOQewtHc8AAAAeZKqC0w",
+      "head_sha": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/jobs/130537915091",
+      "html_url": "https://github.com/LLM-Dev-Ops/research-lab/actions/runs/43025148490/job/130537915091",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-11T12:59:56Z",
+      "started_at": "2026-11-11T12:59:58Z",
+      "completed_at": "2026-11-11T13:01:38Z",
+      "name": "Test",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-11T12:59:58Z",
+          "completed_at": "2026-11-11T12:59:59Z"
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-11T12:59:59Z",
+          "completed_at": "2026-11-11T13:00:24Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-11T13:00:24Z",
+          "completed_at": "2026-11-11T13:00:25Z"
+        },
+        {
+          "name": "Install Rust toolchain",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-11T13:00:25Z",
+          "completed_at": "2026-11-11T13:00:28Z"
+        },
+        {
+          "name": "Cache cargo registry",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-11T13:00:28Z",
+          "completed_at": "2026-11-11T13:00:28Z"
+        },
+        {
+          "name": "Run unit tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-11T13:00:28Z",
+          "completed_at": "2026-11-11T13:01:27Z"
+        },
+        {
+          "name": "Run doc tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-11T13:01:27Z",
+          "completed_at": "2026-11-11T13:01:27Z"
+        },
+        {
+          "name": "Post Cache cargo registry",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-11-11T13:01:27Z",
+          "completed_at": "2026-11-11T13:01:32Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-11-11T13:01:32Z",
+          "completed_at": "2026-11-11T13:01:32Z"
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-11-11T13:01:32Z",
+          "completed_at": "2026-11-11T13:01:36Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-11-11T13:01:36Z",
+          "completed_at": "2026-11-11T13:01:36Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/check-runs/130537915091",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000037061,
+      "runner_name": "GitHub Actions 1000037061",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 130537915180,
+      "run_id": 43025148490,
+      "workflow_name": "CI",
+      "head_branch": "metaharness/offline-stdio-2026-11-11",
+      "run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/runs/43025148490",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOQewtHc8AAAAeZKqDLA",
+      "head_sha": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/jobs/130537915180",
+      "html_url": "https://github.com/LLM-Dev-Ops/research-lab/actions/runs/43025148490/job/130537915180",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-11T12:59:56Z",
+      "started_at": "2026-11-11T12:59:58Z",
+      "completed_at": "2026-11-11T13:00:11Z",
+      "name": "Cloud Function",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-11T12:59:59Z",
+          "completed_at": "2026-11-11T12:59:59Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-11T12:59:59Z",
+          "completed_at": "2026-11-11T13:00:00Z"
+        },
+        {
+          "name": "Set up Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-11T13:00:00Z",
+          "completed_at": "2026-11-11T13:00:05Z"
+        },
+        {
+          "name": "Install dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-11T13:00:05Z",
+          "completed_at": "2026-11-11T13:00:05Z"
+        },
+        {
+          "name": "Test Cloud Function",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-11T13:00:05Z",
+          "completed_at": "2026-11-11T13:00:06Z"
+        },
+        {
+          "name": "Test offline runtime isolation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-11T13:00:06Z",
+          "completed_at": "2026-11-11T13:00:06Z"
+        },
+        {
+          "name": "Audit production dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-11T13:00:06Z",
+          "completed_at": "2026-11-11T13:00:06Z"
+        },
+        {
+          "name": "Post Set up Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-11-11T13:00:06Z",
+          "completed_at": "2026-11-11T13:00:07Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14,
+          "started_at": "2026-11-11T13:00:07Z",
+          "completed_at": "2026-11-11T13:00:07Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-11-11T13:00:07Z",
+          "completed_at": "2026-11-11T13:00:07Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/check-runs/130537915180",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000037060,
+      "runner_name": "GitHub Actions 1000037060",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 130538831446,
+      "run_id": 43025148490,
+      "workflow_name": "CI",
+      "head_branch": "metaharness/offline-stdio-2026-11-11",
+      "run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/runs/43025148490",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOQewtHc8AAAAeZLh-Vg",
+      "head_sha": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/jobs/130538831446",
+      "html_url": "https://github.com/LLM-Dev-Ops/research-lab/actions/runs/43025148490/job/130538831446",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-11T13:01:45Z",
+      "started_at": "2026-11-11T13:01:47Z",
+      "completed_at": "2026-11-11T13:04:51Z",
+      "name": "Docker Build",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-11T13:01:47Z",
+          "completed_at": "2026-11-11T13:01:49Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-11T13:01:49Z",
+          "completed_at": "2026-11-11T13:01:50Z"
+        },
+        {
+          "name": "Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-11T13:01:50Z",
+          "completed_at": "2026-11-11T13:01:55Z"
+        },
+        {
+          "name": "Build Docker image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-11T13:01:55Z",
+          "completed_at": "2026-11-11T13:04:46Z"
+        },
+        {
+          "name": "Post Build Docker image",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-11T13:04:46Z",
+          "completed_at": "2026-11-11T13:04:47Z"
+        },
+        {
+          "name": "Post Set up Docker Buildx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-11T13:04:47Z",
+          "completed_at": "2026-11-11T13:04:50Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-11-11T13:04:50Z",
+          "completed_at": "2026-11-11T13:04:50Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-11T13:04:50Z",
+          "completed_at": "2026-11-11T13:04:50Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/check-runs/130538831446",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000037062,
+      "runner_name": "GitHub Actions 1000037062",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 130540392231,
+      "run_id": 43025148490,
+      "workflow_name": "CI",
+      "head_branch": "metaharness/offline-stdio-2026-11-11",
+      "run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/runs/43025148490",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOQewtHc8AAAAeZNBPJw",
+      "head_sha": "1c3edc64bc650e8cb0e8ad7788cc889b285d244c",
+      "url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/actions/jobs/130540392231",
+      "html_url": "https://github.com/LLM-Dev-Ops/research-lab/actions/runs/43025148490/job/130540392231",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-11-11T13:04:52Z",
+      "started_at": "2026-11-11T13:04:54Z",
+      "completed_at": "2026-11-11T13:04:57Z",
+      "name": "All Checks Pass",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-11T13:04:54Z",
+          "completed_at": "2026-11-11T13:04:54Z"
+        },
+        {
+          "name": "Check all jobs passed",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 2,
+          "started_at": "2026-11-11T13:04:54Z",
+          "completed_at": "2026-11-11T13:04:55Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-11T13:04:55Z",
+          "completed_at": "2026-11-11T13:04:55Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/LLM-Dev-Ops/research-lab/check-runs/130540392231",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000037063,
+      "runner_name": "GitHub Actions 1000037063",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}
